@@ -1,6 +1,6 @@
 # Plan de implementación
 
-> **Base:** [`ARQUITECTURA.md`](ARQUITECTURA.md) v1.9, que sigue siendo la fuente de verdad; las referencias § son de ese documento.
+> **Base:** [`ARQUITECTURA.md`](ARQUITECTURA.md) v1.10, que sigue siendo la fuente de verdad; las referencias § son de ese documento.
 > **Estado:** borrador para revisión · 28/09/2026.
 >
 > **Principio:** primero las bases y después lo que depende de ellas. Cada fase usa solo lo que dejaron listo las anteriores, y se cierra con sus pruebas en verde, su criterio de "hecho" (§14) y un commit.
@@ -52,7 +52,7 @@ flowchart LR
    - `generar_certs_mqtt.sh`: CA propia y certificado con SAN = `DOMINIO`. Usa `MSYS_NO_PATHCONV=1` para que Git Bash no convierta `-subj "/CN=…"` en una ruta de Windows, y deja `server.key` legible para el usuario del contenedor.
    - `usuario_mqtt.sh`, como describe §5.4: contenedor temporal, crea `passwd` si falta, valida el nombre y recarga con `HUP`.
    - `backup.sh`.
-4. **Simulador de la central** (`tools/simulador_central.py`): LWT, `estado` cada 5 s con el formato de §4.3 y comandos, más un menú para disparar alarmas, desconectar nodos, reiniciar la central y cortar sin `disconnect`. En Windows, `aiomqtt` necesita `SelectorEventLoop`. Va antes que la API porque sirve para validar el broker, el ACL y el LWT.
+4. **Simulador de la central** (`tools/simulador_central.py`): LWT, `estado` cada 5 s con el formato de §4.3 y comandos, más un menú para disparar alarmas, desconectar nodos, reiniciar la central y cortar sin `disconnect`. Usa `paho-mqtt` con hilos, así funciona igual en Windows. Va antes que la API porque sirve para validar el broker, el ACL y el LWT.
 5. **Esqueleto del frontend:** Vite + React 19 + TS ~5.9 + Tailwind 4, la página "Monitoreo del hogar", ESLint, Prettier, Vitest y el proxy de desarrollo.
 6. **Esqueleto de la API:** `pyproject.toml` (con grupo `dev`), `config.py`, `main.py`, `web.py` (respaldo SPA, 404 JSON en `/api/*`, cabeceras y CSP), `/api/v1/salud` básico, Alembic sin migraciones, ruff y pytest.
 7. **`backend/Dockerfile`** multi-etapa.

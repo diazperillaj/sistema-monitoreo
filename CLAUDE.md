@@ -3,14 +3,14 @@ Sistema de monitoreo con ESP32. Solo la app: 3 contenedores (mosquitto, api = Fa
 - Especificación completa: docs/ARQUITECTURA.md (fuente de verdad).
 - Plan de implementación (orden de cada fase y sus dependencias): docs/PLAN_IMPLEMENTACION.md
 - El firmware en firmware/ es solo de referencia: NO se modifica.
-- Desarrollo: `docker network create alarma_proxy_dev` (una vez) y `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d`
-- Pruebas: `cd backend && pytest -q` (usa testcontainers: requiere Docker). Lint: `ruff check . && ruff format --check .`
+- Desarrollo: `docker network create alarma_proxy_dev` (una vez) y `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build`. La primera vez, además: `.env` local (ver README), `./scripts/generar_certs_mqtt.sh` y `./scripts/usuario_mqtt.sh` para `backend_api` y `casa-dev`. En este equipo PostgreSQL de desarrollo queda en el 5434 (`PUERTO_DB_DEV`).
+- Python con uv: `cd backend && uv sync`. Pruebas: `uv run pytest -q` (desde F1 usa testcontainers: requiere Docker). Lint: `uv run ruff check . ../tools && uv run ruff format --check . ../tools`
 - Frontend (Node 24): `cd frontend && npm run dev` → http://localhost:5173 (proxy a la API en :8011). Pruebas: `npm test`. Lint: `npm run lint`. TypeScript fijo en ~5.9 (no subir a 7: rompe typescript-eslint y openapi-typescript).
-- Tipos de la API en el frontend: `python -m app.cli exportar-openapi > ../frontend/openapi.json` y luego `npm run tipos`.
-- Migraciones: `alembic revision --autogenerate -m "..."` y revisar a mano los índices parciales (§7.3).
-- Simulador de central: `python tools/simulador_central.py --casa casa-dev --host localhost --puerto 1883`
+- Tipos de la API en el frontend: `uv run python -m app.cli exportar-openapi > ../frontend/openapi.json` y luego `npm run tipos`.
+- Migraciones: `uv run alembic revision --autogenerate --rev-id <NNNN> -m "..."` y revisar a mano los índices parciales (§7.3).
+- Simulador de central (desde backend/): `uv run python ../tools/simulador_central.py --casa casa-dev --clave <CLAVE_CENTRAL del .env>`; escribe `ayuda` para ver el menú.
 - Notificaciones: Web Push (base) + Telegram opcional por usuario (long polling, sin webhook). Con TELEGRAM_BOT_TOKEN vacío el canal se desactiva.
-- Fase actual: F0
+- Fase actual: F1 (F0 terminada)
 
 ## Cómo trabajar en este repo
 - Antes de cada fase, releer en docs/ARQUITECTURA.md la fase (§14) y las secciones que cita.

@@ -1,6 +1,6 @@
 # Sistema de monitoreo doméstico — Arquitectura del backend
 
-> **Versión:** 1.9 · **Fecha:** 28/09/2026 · **Autor:** Juan Pablo (con Claude)
+> **Versión:** 1.10 · **Fecha:** 28/09/2026 · **Autor:** Juan Pablo (con Claude)
 > **Objetivo del documento:** especificación completa para desarrollar el backend y la app web con Claude Code.
 > **Alcance:** backend, infraestructura y frontend. **El firmware de las ESP32 ya existe y NO se modifica**; solo se le cambian valores de configuración (§12.9).
 >
@@ -16,6 +16,8 @@
 > **Cambios en 1.8:** frontend en **React 19 + TypeScript 5.9 + Vite 8** (PWA), compilado dentro de la imagen de la API: sigue habiendo 3 contenedores y el mismo bloque de Caddy. URLs limpias (`/casa/1`), tipos compartidos por OpenAPI, CSP, pruebas del frontend y fases actualizadas.
 >
 > **Cambios en 1.9:** decisiones S10–S14 (§17), tras contrastar la especificación con el firmware: recordatorios de conexión espaciados, detección de eventos nuevos de la central sin hash, lecturas solo de nodos en línea, mensajes retenidos que no cambian `recibido_en` y usuario MQTT del backend `backend_api`. Además se precisan `cerrada_por = "automatica"`, los cambios de horario de la habitación, la interpolación de contadores, el orden de arranque de Mosquitto y el contenido de cada fase (§14), cuyo detalle está en [`PLAN_IMPLEMENTACION.md`](PLAN_IMPLEMENTACION.md).
+>
+> **Cambios en 1.10 (F0):** Mosquitto 2.1 con la configuración montada en solo lectura, dependencias de Python fijadas con `uv.lock`, CSP propia para `/api/v1/docs`, puerto de PostgreSQL configurable en desarrollo y simulador con `paho-mqtt`.
 
 ---
 
@@ -216,7 +218,7 @@ sequenceDiagram
 | Hash de claves | `pwdlib[argon2]` | 0.2 | Argon2id |
 | Pruebas | `pytest`, `pytest-asyncio`, `httpx`, `respx`, `testcontainers[postgres]` | | PostgreSQL real y efímero; `respx` simula la Bot API de Telegram |
 | Calidad | `ruff` (lint + formato), `mypy` (opcional) | | |
-| Dependencias | `pyproject.toml`; instalación con `uv` en el Dockerfile | | Las de pruebas y calidad van en un grupo `dev` y no entran en la imagen |
+| Dependencias | `pyproject.toml` + `uv.lock` (versiones exactas); instalación con `uv` en el Dockerfile | | Las de pruebas y calidad van en un grupo `dev` y no entran en la imagen. Ruff se configura en `ruff.toml` (raíz) para `backend/` y `tools/` |
 
 ### 3.2 Infraestructura
 
@@ -436,6 +438,7 @@ alarma-hogar/
 ├── .dockerignore                # node_modules, .venv, dist, tests, .git, .env, backups, mosquitto, firmware (§5.2)
 ├── .gitignore
 ├── .gitattributes               # finales de línea LF: los scripts y la config de Mosquitto se ejecutan en Linux
+├── ruff.toml                    # lint y formato de Python para backend/ y tools/
 ├── backups/                     # lo crea backup.sh, NO se versiona
 ├── caddy/
 │   └── alarma.caddy            # bloque para pegar en el Caddyfile existente (referencia)
@@ -453,7 +456,9 @@ alarma-hogar/
 │   └── simulador_central.py    # central falsa para desarrollo y pruebas (usa el entorno de backend/)
 ├── backend/
 │   ├── Dockerfile              # multi-etapa: compila frontend/ y arma la imagen de la API (§5.2)
-│   ├── pyproject.toml          # dependencias, grupo dev, ruff y pytest
+│   ├── pyproject.toml          # dependencias, grupo dev y pytest
+│   ├── uv.lock                 # versiones exactas (las usa también la imagen)
+│   ├── .python-version         # 3.12
 │   ├── alembic.ini
 │   ├── migrations/
 │   │   ├── env.py              # plantilla async
@@ -542,7 +547,8 @@ services:
     restart: unless-stopped
     ports: ["8883:8883"]                 # SOLO el puerto TLS se publica
     volumes:
-      - ./mosquitto/config:/mosquitto/config
+      # Solo lectura: los usuarios los escribe scripts/usuario_mqtt.sh desde un contenedor aparte (§5.4)
+      - ./mosquitto/config:/mosquitto/config:ro
       - ./mosquitto/certs:/mosquitto/certs:ro
       - mosquitto_data:/mosquitto/data
     networks: [interna]
@@ -573,11 +579,14 @@ RUN npm run build                                        # -> /web/dist
 
 # ---- Etapa 2: API ----
 FROM python:3.12-slim
-COPY --from=ghcr.io/astral-sh/uv:0.8 /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.12 /uv /usr/local/bin/uv
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /app
-COPY backend/pyproject.toml ./
-RUN uv pip install --system --no-cache -r pyproject.toml  # solo dependencias: capa reutilizable si no cambian
+# Solo dependencias, con las versiones exactas de uv.lock: capa reutilizable si no cambian
+COPY backend/pyproject.toml backend/uv.lock ./
+RUN uv export --frozen --no-dev --no-emit-project -o /tmp/requisitos.txt \
+ && uv pip install --system --no-cache -r /tmp/requisitos.txt \
+ && rm /tmp/requisitos.txt
 COPY backend/ ./
 COPY --from=web /web/dist ./frontend
 RUN useradd --system --uid 10001 app
@@ -587,7 +596,8 @@ CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0
 ```
 
 - **Orden de las capas:** si solo cambia el código de Python, no se reinstalan dependencias. Si solo cambia el backend, la etapa de Node se reutiliza desde la caché de Docker.
-- **`.dockerignore`** (en la raíz): `**/node_modules`, `frontend/dist`, `.git`, `.env`, `backups/`, `mosquitto/`, `firmware/`, `**/__pycache__`.
+- **Versiones exactas:** la imagen instala lo que fija `uv.lock`, las mismas versiones con las que pasaron las pruebas.
+- **`.dockerignore`** (en la raíz): `.git`, `.env`, `backups/`, `mosquitto/`, `firmware/`, `docs/`, `tools/`, `**/node_modules`, `**/.venv`, cachés de Python, `frontend/dist` y `backend/tests`.
 
 `IPS_PROXY_CONFIABLES` define de quién se acepta `X-Forwarded-For` (la IP real del celular, usada en el rate limit). Valor recomendado: la **subred de la red del proxy** (ej. `172.20.0.0/16`, sale de `docker network inspect $RED_PROXY`). Las versiones recientes de uvicorn aceptan rangos CIDR aquí; si la instalada no, usar `*`. Es aceptable porque la API no publica puertos: solo la alcanzan contenedores de esa red.
 
@@ -596,7 +606,7 @@ CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0
 ```yaml
 services:                              # la API ya queda en 127.0.0.1:8011 por el compose base
   db:
-    ports: ["127.0.0.1:5432:5432"]
+    ports: ["127.0.0.1:${PUERTO_DB_DEV:-5432}:5432"]   # si el 5432 está ocupado: PUERTO_DB_DEV en el .env
   mosquitto:
     ports: ["127.0.0.1:1883:1883"]
 ```
@@ -661,10 +671,12 @@ listener 1883
 # Externo: centrales ESP32 por internet
 listener 8883
 certfile /mosquitto/certs/server.crt
-keyfile  /mosquitto/certs/server.key
-cafile   /mosquitto/certs/ca.crt
+keyfile /mosquitto/certs/server.key
+cafile /mosquitto/certs/ca.crt
 # Sin tls_version: por defecto acepta TLS 1.2 y 1.3 (la ESP32 negocia 1.2)
 ```
+
+La imagen `eclipse-mosquitto:2` trae Mosquitto **2.1** (verificado el 28/09/2026: acepta TLS 1.2 y 1.3 en el 8883).
 
 `mosquitto/config/acl`
 
@@ -672,7 +684,7 @@ cafile   /mosquitto/certs/ca.crt
 # Cada central SOLO puede tocar sus propios tópicos (usuario MQTT == ID_CASA)
 pattern write casa/%u/estado
 pattern write casa/%u/online
-pattern read  casa/%u/cmd
+pattern read casa/%u/cmd
 
 # El backend ve todas las casas. Su usuario lleva "_", que ID_CASA no admite:
 # así ninguna central puede llamarse igual (§12.6)
@@ -686,8 +698,8 @@ topic readwrite casa/#
 - Uno por central, con **usuario = `ID_CASA`**.
 
 Se crean con `scripts/usuario_mqtt.sh <usuario> <clave>`, que:
-- ejecuta `mosquitto_passwd -b` en un contenedor temporal (`docker compose run --rm --no-deps mosquitto …`), así que funciona aunque el broker esté detenido;
-- crea `mosquitto/config/passwd` si no existe: Mosquitto no arranca sin ese archivo ni sin los certificados (§5.5);
+- ejecuta `mosquitto_passwd -b` en un contenedor temporal (`docker run --rm … eclipse-mosquitto:2`), así que funciona aunque el broker esté detenido; el broker monta la configuración en solo lectura;
+- crea `mosquitto/config/passwd` si no existe (Mosquitto no arranca sin ese archivo ni sin los certificados, §5.5) y lo deja del usuario `mosquitto` (uid 1883), que es quien lo relee al recargar;
 - acepta solo `backend_api` o nombres con el formato de `ID_CASA`;
 - si el broker está corriendo, le envía `kill -HUP` para que recargue los usuarios.
 
@@ -699,6 +711,9 @@ Se crean con `scripts/usuario_mqtt.sh <usuario> <clave>`, que:
 - `server.key` y `server.crt`: RSA 2048, 10 años, firmado por la CA, con **SAN = `DNS:${DOMINIO}`**.
 
 Se usa RSA 2048 por compatibilidad garantizada con mbedTLS de la ESP32. **`ca.key` se guarda fuera del servidor** (respaldo offline).
+
+- En Linux, el script le entrega `server.key` al usuario `mosquitto` (uid 1883) con un contenedor, porque el broker la relee al recargar.
+- Funciona también en Git Bash (Windows): usa `MSYS_NO_PATHCONV=1` para que `-subj "/CN=…"` no se convierta en una ruta.
 
 ### 5.6 Variables de entorno (`.env.example`)
 
@@ -741,6 +756,10 @@ RECORDATORIO_MIN_DEFECTO=5               # alarmas de sensor
 RECORDATORIO_CONEXION_MIN_DEFECTO=60     # nodo sin conexión y central desconectada
 MINUTOS_CENTRAL_CAIDA_DEFECTO=1
 TIMEOUT_CONFIRMACION_COMANDO_S=8
+
+# Solo desarrollo
+# PUERTO_DB_DEV=5434                     # puerto local de PostgreSQL si el 5432 está ocupado (docker-compose.dev.yml)
+# CLAVE_CENTRAL=                         # clave MQTT de la central de prueba, para tools/simulador_central.py
 ```
 
 `config.py` lee `DATABASE_URL` (obligatoria). En las pruebas la reemplaza la URL del contenedor efímero (§13.2).
@@ -903,6 +922,7 @@ El Caddy del servidor es compartido con otros proyectos, así que la app no depe
 1. Routers de `/api/v1/*` y `/ws/v1/*`.
 2. **Comodín `/api/{resto:path}` → 404 en JSON** (`{"detail":{"codigo":"no_encontrado",...}}`). Así ninguna ruta de API inexistente cae en el `index.html`.
    - Esto también mantiene el comportamiento que espera la app local de la ESP32: en este dominio, `GET /api/estado` debe dar 404 (§3.4).
+   - Igual con `/ws/{resto:path}`: una petición HTTP a una ruta de WebSocket da 404 en JSON, no el `index.html`.
 3. Archivos del build que existan en disco, con `StaticFiles`: `/assets/*`, `/sw.js`, `/manifest.webmanifest` e `/icons/*`.
 4. **Respaldo SPA:** cualquier otro `GET` que no sea un archivo devuelve `index.html`. Así funcionan las rutas del cliente (`/casa/1`, `/invitacion/<token>`) al recargar o al abrir un enlace de una notificación.
    - Si `/app/frontend/index.html` no existe (por ejemplo, en pruebas del backend), `GET /` responde 503 con `"frontend no compilado"`.
@@ -919,11 +939,12 @@ El Caddy del servidor es compartido con otros proyectos, así que la app no depe
 | `Cache-Control` en `/`, `/index.html`, `/sw.js`, `/manifest.webmanifest` y respuestas del respaldo SPA | `no-cache` (para que la PWA detecte versiones nuevas) |
 | `Cache-Control` en `/assets/*` | `public, max-age=31536000, immutable`. Vite pone un hash en el nombre de cada archivo, así que un despliegue nuevo cambia los nombres |
 | `Cache-Control` en `/icons/*` | `public, max-age=604800` |
-| `Cache-Control` en `/api/*` | `no-store` |
+| `Cache-Control` en `/api/*` y en cualquier respuesta de error (4xx o 5xx) | `no-store` (así un 404 de `/assets/*` nunca se guarda como inmutable) |
 
 Notas sobre la CSP:
 - `'unsafe-inline'` en `style-src` lo exigen los atributos `style` que generan Recharts y Radix. Los scripts **no** lo necesitan: el build de Vite no tiene scripts en línea.
 - En desarrollo (`ENTORNO=desarrollo`), `connect-src` agrega `ws://localhost:*`.
+- **Excepción:** `/api/v1/docs` (Swagger UI) usa una CSP propia que permite `https://cdn.jsdelivr.net` y su script de arranque en línea. Sin ella, la documentación de la API se vería en blanco.
 
 La compresión la hace Caddy (`encode zstd gzip`).
 
@@ -1966,7 +1987,7 @@ const char* ID_CASA      = "casa-abuela-x7k2";     // == casas.codigo en la BD
 
 **`tools/simulador_central.py`** debe:
 
-- conectarse al broker como una central (TLS 8883 o 1883 en local), con LWT idéntico al firmware;
+- conectarse al broker como una central (TLS 8883 o 1883 en local), con LWT idéntico al firmware. Usa `paho-mqtt` con hilos, así funciona igual en Windows, y corre con el entorno de `backend/`: `uv run python ../tools/simulador_central.py --casa casa-dev --clave <clave>`;
 - publicar `estado` cada 5 s con el formato exacto de §4.3;
 - aceptar comandos en `cmd` y aplicarlos (activar, desactivar, silenciar), publicando el `estado` de inmediato;
 - aceptar un menú o CLI para disparar alarmas por nodo, desconectar un nodo, reiniciar la central (`visto:false`) y cortar la conexión sin `disconnect` (para probar el LWT).
@@ -2163,7 +2184,7 @@ Solo si se quiere ofrecer el canal de Telegram (§10.7). Sin esto, la app funcio
 
 | Tarea | Cómo |
 |---|---|
-| Backup diario | `scripts/backup.sh` genera `docker compose exec -T db pg_dump -U alarma -d alarma -Fc > backups/alarma-$(date +%F).dump` y copia `mosquitto/config`, `mosquitto/certs` y `.env`. Rotación de 14 días. Cron del host a las 03:30. Copiar fuera del servidor (disco externo o nube). El certificado HTTPS no se respalda: se vuelve a emitir. |
+| Backup diario | `scripts/backup.sh` genera `backups/alarma-$(date +%F).dump` con `pg_dump -Fc`, empaqueta `mosquitto/config` y `mosquitto/certs` desde el contenedor del broker (`passwd` y `server.key` son de su usuario) y copia `.env`. Rotación de 14 días. Cron del host a las 03:30. Copiar fuera del servidor (disco externo o nube). El certificado HTTPS no se respalda: se vuelve a emitir. |
 | Restaurar | `docker compose stop api` → `docker compose exec -T db pg_restore -U alarma -d alarma --clean --if-exists < backups/alarma-AAAA-MM-DD.dump` → `docker compose start api`. |
 | Probar un backup | Restaurar en una base aparte: `createdb -U alarma prueba_restauracion` y `pg_restore -d prueba_restauracion`. Contar filas de `alarmas` y `eventos`, y borrar la base. |
 | Actualizar | En la carpeta del proyecto: `git pull && docker compose pull && docker compose up -d --build`. Solo reinicia los contenedores `alarma-*`. El frontend se recompila en el mismo paso y las migraciones corren solas al arrancar. **Hacer backup antes.** Los celulares verán "Nueva versión disponible". |
