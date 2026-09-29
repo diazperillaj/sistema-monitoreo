@@ -18,4 +18,8 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    files: ["src/sw.ts"],
+    languageOptions: { globals: globals.serviceworker },
+  },
 ]);

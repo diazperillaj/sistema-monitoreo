@@ -1553,6 +1553,327 @@
           }
         }
       }
+    },
+    "/api/v1/push/clave-publica": {
+      "get": {
+        "tags": [
+          "push"
+        ],
+        "summary": "Clave Publica",
+        "description": "Pública: el navegador la necesita para suscribirse.",
+        "operationId": "clave_publica_api_v1_push_clave_publica_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClavePublica"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "El servidor no tiene claves VAPID"
+          }
+        }
+      }
+    },
+    "/api/v1/push/suscripciones": {
+      "post": {
+        "tags": [
+          "push"
+        ],
+        "summary": "Suscribir",
+        "description": "Guarda la suscripción de este dispositivo. Si ya existía (otra persona entró en el\nmismo celular), pasa al usuario actual.",
+        "operationId": "suscribir_api_v1_push_suscripciones_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NuevaSuscripcion"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso u origen inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "push"
+        ],
+        "summary": "Dar De Baja",
+        "description": "Este dispositivo deja de recibir notificaciones. Solo borra una suscripción propia.",
+        "operationId": "dar_de_baja_api_v1_push_suscripciones_delete",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BajaSuscripcion"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso u origen inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notificaciones/preferencias": {
+      "get": {
+        "tags": [
+          "notificaciones"
+        ],
+        "summary": "Ver",
+        "operationId": "ver_api_v1_notificaciones_preferencias_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preferencias"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "notificaciones"
+        ],
+        "summary": "Cambiar",
+        "description": "`webpush: false` pausa las notificaciones en todos sus dispositivos sin borrarlos.",
+        "operationId": "cambiar_api_v1_notificaciones_preferencias_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CambioPreferencias"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preferencias"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso u origen inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notificaciones/prueba": {
+      "post": {
+        "tags": [
+          "notificaciones"
+        ],
+        "summary": "Probar",
+        "description": "Envía \"🔔 Notificación de prueba\" a los dispositivos del usuario. Responde cuántos.",
+        "operationId": "probar_api_v1_notificaciones_prueba_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Prueba"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoPrueba"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso u origen inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servicio no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1714,6 +2035,20 @@
         ],
         "title": "Alarma"
       },
+      "BajaSuscripcion": {
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Endpoint"
+          }
+        },
+        "type": "object",
+        "required": [
+          "endpoint"
+        ],
+        "title": "BajaSuscripcion"
+      },
       "CambioAjustes": {
         "properties": {
           "recordatorio_min": {
@@ -1823,6 +2158,34 @@
         ],
         "title": "CambioClave"
       },
+      "CambioPreferencias": {
+        "properties": {
+          "webpush": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Webpush"
+          },
+          "telegram": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telegram"
+          }
+        },
+        "type": "object",
+        "title": "CambioPreferencias"
+      },
       "Casa": {
         "properties": {
           "id": {
@@ -1903,6 +2266,43 @@
           "nombre"
         ],
         "title": "CasaNueva"
+      },
+      "ClavePublica": {
+        "properties": {
+          "clave": {
+            "type": "string",
+            "title": "Clave"
+          }
+        },
+        "type": "object",
+        "required": [
+          "clave"
+        ],
+        "title": "ClavePublica"
+      },
+      "ClavesPush": {
+        "properties": {
+          "p256dh": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 80,
+            "pattern": "^[A-Za-z0-9_-]+={0,2}$",
+            "title": "P256Dh"
+          },
+          "auth": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 16,
+            "pattern": "^[A-Za-z0-9_-]+={0,2}$",
+            "title": "Auth"
+          }
+        },
+        "type": "object",
+        "required": [
+          "p256dh",
+          "auth"
+        ],
+        "title": "ClavesPush"
       },
       "Comando": {
         "properties": {
@@ -2393,6 +2793,25 @@
         "title": "NodoCentral",
         "description": "Un nodo del payload de estado (§4.3). Los nombres del JSON se conservan en la API."
       },
+      "NuevaSuscripcion": {
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Endpoint"
+          },
+          "keys": {
+            "$ref": "#/components/schemas/ClavesPush"
+          }
+        },
+        "type": "object",
+        "required": [
+          "endpoint",
+          "keys"
+        ],
+        "title": "NuevaSuscripcion",
+        "description": "Lo que entrega PushSubscription.toJSON() en el navegador."
+      },
       "PaginaAlarmas": {
         "properties": {
           "items": {
@@ -2448,6 +2867,136 @@
           "siguiente"
         ],
         "title": "PaginaEventos"
+      },
+      "Preferencias": {
+        "properties": {
+          "webpush": {
+            "$ref": "#/components/schemas/PreferenciasWebPush"
+          },
+          "telegram": {
+            "$ref": "#/components/schemas/PreferenciasTelegram"
+          }
+        },
+        "type": "object",
+        "required": [
+          "webpush",
+          "telegram"
+        ],
+        "title": "Preferencias"
+      },
+      "PreferenciasTelegram": {
+        "properties": {
+          "disponible": {
+            "type": "boolean",
+            "title": "Disponible"
+          },
+          "bot": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bot"
+          },
+          "vinculado": {
+            "type": "boolean",
+            "title": "Vinculado"
+          },
+          "cuenta": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cuenta"
+          },
+          "vinculado_en": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vinculado En"
+          },
+          "activo": {
+            "type": "boolean",
+            "title": "Activo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "disponible",
+          "bot",
+          "vinculado",
+          "cuenta",
+          "vinculado_en",
+          "activo"
+        ],
+        "title": "PreferenciasTelegram"
+      },
+      "PreferenciasWebPush": {
+        "properties": {
+          "activo": {
+            "type": "boolean",
+            "title": "Activo"
+          },
+          "dispositivos": {
+            "type": "integer",
+            "title": "Dispositivos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "activo",
+          "dispositivos"
+        ],
+        "title": "PreferenciasWebPush"
+      },
+      "Prueba": {
+        "properties": {
+          "canal": {
+            "type": "string",
+            "enum": [
+              "webpush",
+              "telegram",
+              "todos"
+            ],
+            "title": "Canal"
+          }
+        },
+        "type": "object",
+        "required": [
+          "canal"
+        ],
+        "title": "Prueba"
+      },
+      "ResultadoPrueba": {
+        "properties": {
+          "webpush": {
+            "type": "integer",
+            "title": "Webpush"
+          },
+          "telegram": {
+            "type": "boolean",
+            "title": "Telegram"
+          }
+        },
+        "type": "object",
+        "required": [
+          "webpush",
+          "telegram"
+        ],
+        "title": "ResultadoPrueba"
       },
       "ResumenCasa": {
         "properties": {

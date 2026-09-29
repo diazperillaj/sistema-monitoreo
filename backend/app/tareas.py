@@ -12,6 +12,7 @@ from app.services.mqtt_ingesta import ingesta
 
 log = logging.getLogger(__name__)
 VIGILANTE_CADA_S = 10
+RECORDATORIOS_CADA_S = 30
 COMANDOS_CADA_S = 2
 
 
@@ -37,6 +38,10 @@ async def tareas_de_fondo(app: FastAPI) -> AsyncIterator[None]:
                 "vigilante_central", VIGILANTE_CADA_S, estado.procesador.revisar_centrales_caidas
             ),
             name="vigilante_central",
+        ),
+        asyncio.create_task(
+            repetir("recordatorios", RECORDATORIOS_CADA_S, estado.procesador.revisar_recordatorios),
+            name="recordatorios",
         ),
         asyncio.create_task(
             repetir(

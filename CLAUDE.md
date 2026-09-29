@@ -11,10 +11,10 @@ Sistema de monitoreo con ESP32. Solo la app: 3 contenedores (mosquitto, api = Fa
 - Base de desarrollo: superadmin `admin@ejemplo.com` (clave en `ADMIN_DEV_CLAVE` del `.env`) y casa `casa-dev`, la del simulador.
 - Simulador de central (desde backend/): `uv run python ../tools/simulador_central.py --casa casa-dev --clave <CLAVE_CENTRAL del .env>`; escribe `ayuda` para ver el menú. También lee órdenes por tubería, una por línea (`w <s>` espera), para guionar escenarios.
 - Notificaciones: Web Push (base) + Telegram opcional por usuario (long polling, sin webhook). Con TELEGRAM_BOT_TOKEN vacío el canal se desactiva.
-- Fase actual: F4 (F0 a F3 terminadas)
+- Fase actual: F4b (F0 a F4 terminadas; F4b es opcional)
 
 ## Cómo trabajar en este repo
 - Antes de cada fase, releer en docs/ARQUITECTURA.md la fase (§14) y las secciones que cita.
 - Una fase a la vez: terminarla con sus pruebas en verde y su criterio de "hecho" antes de pasar a la siguiente.
-- Al cerrar cada fase: un commit y push a GitHub (github.com/diazperillaj/sistema-monitoreo, rama main); después, esperar la revisión del usuario antes de empezar la siguiente.
+- Al cerrar cada fase: agregar a docs/PRUEBAS_MANUALES.md cómo probarla a mano (qué hacer y qué se debe ver), comprobando cada paso; un commit y push a GitHub (github.com/diazperillaj/sistema-monitoreo, rama main); después, esperar la revisión del usuario antes de empezar la siguiente.
 - Si algo del documento es ambiguo o parece requerir tocar el firmware, detenerse y preguntar.

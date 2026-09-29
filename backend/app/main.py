@@ -1,5 +1,7 @@
 """Punto de entrada de la API (§6). uvicorn la crea con: app.main:create_app --factory"""
 
+import asyncio
+import contextlib
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
@@ -10,14 +12,27 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 
 from app import __version__
-from app.api import ajustes, alarmas, auth, casas, comandos, eventos, salud, ws
+from app.api import (
+    ajustes,
+    alarmas,
+    auth,
+    casas,
+    comandos,
+    eventos,
+    notificaciones,
+    push,
+    salud,
+    ws,
+)
 from app.config import Settings, obtener_settings
 from app.db import crear_fabrica, crear_motor
 from app.logs import configurar_logs
 from app.seguridad import Limites, SeguridadApi
 from app.services.estado_cache import EstadoCache
 from app.services.mqtt_cliente import EstadoMqtt
+from app.services.notificador import Notificador
 from app.services.procesador import Procesador
+from app.services.webpush import CanalWebPush, cargar_vapid
 from app.services.ws_hub import HubWs
 from app.tareas import tareas_de_fondo
 from app.web import CabecerasSeguridad, montar_frontend
@@ -30,13 +45,18 @@ ROUTERS = (
     comandos.router,
     alarmas.router,
     eventos.router,
+    push.router,
+    notificaciones.router,
 )
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    async with tareas_de_fondo(app):  # ingesta MQTT, vigilante y vencimiento de comandos (§6.2)
+    async with tareas_de_fondo(app):  # ingesta MQTT, vigilante, recordatorios y comandos (§6.2)
         yield
+    with contextlib.suppress(TimeoutError):  # las notificaciones en camino, sin demorar el apagado
+        async with asyncio.timeout(10):
+            await app.state.notificador.esperar()
     await app.state.motor.dispose()
 
 
@@ -102,7 +122,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Viven en memoria del proceso: por eso un solo worker (§6.6)
     app.state.hub = HubWs()
     app.state.mqtt = EstadoMqtt()
-    app.state.procesador = Procesador(app.state.sesiones, app.state.hub, EstadoCache())
+    vapid = cargar_vapid(settings.vapid_clave_publica, settings.vapid_clave_privada)
+    app.state.notificador = Notificador(
+        app.state.sesiones, CanalWebPush(vapid, settings.vapid_sujeto)
+    )
+    app.state.procesador = Procesador(
+        app.state.sesiones, app.state.hub, EstadoCache(), notificador=app.state.notificador
+    )
     app.add_exception_handler(RequestValidationError, solicitud_invalida)
     # Primero la API y el WebSocket; después el frontend y su respaldo SPA (§6.7)
     for router in ROUTERS:

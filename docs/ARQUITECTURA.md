@@ -1,6 +1,6 @@
 # Sistema de monitoreo doméstico — Arquitectura del backend
 
-> **Versión:** 1.13 · **Fecha:** 29/09/2026 · **Autor:** Juan Pablo (con Claude)
+> **Versión:** 1.14 · **Fecha:** 29/09/2026 · **Autor:** Juan Pablo (con Claude)
 > **Objetivo del documento:** especificación completa para desarrollar el backend y la app web con Claude Code.
 > **Alcance:** backend, infraestructura y frontend. **El firmware de las ESP32 ya existe y NO se modifica**; solo se le cambian valores de configuración (§12.9).
 >
@@ -24,6 +24,8 @@
 > **Cambios en 1.12 (F2):** campos de `Transicion`, inicio de las alarmas de conexión y textos de los eventos (§6.4); un `estado` en vivo corrige una conexión mal registrada, y un `"0"` retenido cuenta la caída aunque la base no la conociera (§6.3); `EstadoCasa.central` tipado (§8.3); fechas con zona horaria en los filtros (§8.5); WebSocket que acepta y luego cierra con 4401/4403, y revisa la sesión en cada ping (§9); `tzdata` (§3.1); simulador con órdenes por tubería (§13.3).
 >
 > **Cambios en 1.13 (F3):** el comando se guarda y se avisa por WebSocket antes de publicarlo; eventos "Laura silenció Baño" y "La central no confirmó…"; solo un `estado` en vivo y con el nodo conocido confirma; 503 `mqtt_no_disponible` si el backend no tiene conexión con el broker (§6.5, §8.4, §9).
+>
+> **Cambios en 1.14 (F4):** Web Push completo: quién marca `ultimo_aviso_en` y cuenta `avisos_enviados`, cuándo se avisa "Central en línea", urgencia de cada aviso (§10.1); "Silenciar" solo en alarmas de sensor (§10.3); errores de envío (§10.4); claves VAPID validadas al arrancar y solo suscripciones de servicios de push conocidos (§12.7); respuestas de `/push` y `/notificaciones` (§8.7).
 
 ---
 
@@ -219,7 +221,7 @@ sequenceDiagram
 | ORM | SQLAlchemy 2.0 (async) + `asyncpg` | 2.0 / 0.29 | Pool: `pool_size=5`, `max_overflow=5`, `pool_pre_ping=True` |
 | Migraciones | Alembic (plantilla `async`) | 1.13 | Se ejecutan al arrancar el contenedor (`alembic upgrade head`) |
 | Cliente MQTT | `aiomqtt` | 2.x | Tarea asyncio dentro del `lifespan` |
-| Web Push | `pywebpush` (incluye `py-vapid`) | 2.0 | Síncrono → se ejecuta en threadpool |
+| Web Push | `pywebpush` (incluye `py-vapid`) | 2.0 | Síncrono → cada envío corre en un hilo (`asyncio.to_thread`) |
 | Telegram | `httpx` (cliente async de la Bot API, sin librería de bots) | 0.27 | Opcional: solo si `TELEGRAM_BOT_TOKEN` está definido (§10.7) |
 | Hash de claves | `pwdlib[argon2]` | 0.2 | Argon2id |
 | Zonas horarias | `tzdata` | 2024.1 | La imagen `python:3.12-slim` no trae la base de zonas, y los textos usan `America/Bogota` |
@@ -1407,7 +1409,7 @@ Tiempo de respuesta = `fin_en - inicio_en` de las alarmas con `cerrada_por = "us
 |---|---|---|---|---|
 | GET | `/notificaciones/preferencias` | sesión | — | `Preferencias` |
 | PATCH | `/notificaciones/preferencias` | sesión | `{webpush?: bool, telegram?: bool}` | 200 `Preferencias`. `telegram: true` sin vínculo → 409 `telegram_no_vinculado` |
-| POST | `/notificaciones/prueba` | sesión | `{canal: "webpush" \| "telegram" \| "todos"}` | 202; envía "🔔 Notificación de prueba" por ese canal a mis dispositivos o chat |
+| POST | `/notificaciones/prueba` | sesión | `{canal: "webpush" \| "telegram" \| "todos"}` | 202 `{webpush: <dispositivos>, telegram: bool}`; envía "🔔 Notificación de prueba" por ese canal a mis dispositivos o chat. 503 `webpush_no_disponible` sin claves VAPID; 409 `telegram_no_disponible` sin Telegram |
 
 ```jsonc
 // Preferencias
@@ -1428,9 +1430,9 @@ Tiempo de respuesta = `fin_en - inicio_en` de las alarmas con `cerrada_por = "us
 
 | Método | Ruta | Permiso | Cuerpo | Respuesta |
 |---|---|---|---|---|
-| GET | `/push/clave-publica` | pública | — | `{clave: VAPID_CLAVE_PUBLICA}` |
-| POST | `/push/suscripciones` | sesión | `{endpoint, keys:{p256dh, auth}}` | 201 (upsert por `endpoint`; reasigna al usuario actual) |
-| DELETE | `/push/suscripciones` | sesión | `{endpoint}` | 204 |
+| GET | `/push/clave-publica` | pública | — | `{clave: VAPID_CLAVE_PUBLICA}` · 503 `webpush_no_disponible` sin claves VAPID |
+| POST | `/push/suscripciones` | sesión | `{endpoint, keys:{p256dh, auth}}` | 201 (upsert por `endpoint`; reasigna al usuario actual) · 400 si el `endpoint` no es de un servicio de push conocido (§12.7) |
+| DELETE | `/push/suscripciones` | sesión | `{endpoint}` | 204. Solo borra una suscripción propia |
 
 **Telegram (vínculo de la cuenta)**
 
@@ -1512,7 +1514,13 @@ Hay **dos canales**:
 1. El procesador arma un `Aviso` independiente del canal: `{titulo, cuerpo, tag, url, tipo, urgente, casa_id, alarma_id?, nodo_id?}`.
 2. El notificador lo entrega **en una tarea aparte** (`asyncio.create_task`, con su propia sesión de BD). Así un servicio externo lento nunca frena la ingesta MQTT.
 3. Por cada destinatario, envía por Web Push y por Telegram **en paralelo** (`asyncio.gather`). El fallo de un canal no afecta al otro.
-4. Se actualizan `alarmas.avisos_enviados` y `ultimo_aviso_en` una vez por ronda, no por canal.
+4. Se actualizan `alarmas.avisos_enviados` y `ultimo_aviso_en` una vez por ronda, no por canal:
+   - `ultimo_aviso_en` lo marca quien dispara el aviso (el procesador al abrir la alarma, el vigilante o la tarea `recordatorios`), en su propia transacción y **antes** de enviar: así un recordatorio nunca sale dos veces;
+   - `avisos_enviados` lo suma el notificador al terminar la ronda. Solo cuentan los avisos de la alarma (apertura y recordatorios), no el de resuelta ni el de "Central en línea".
+5. Un recordatorio se debe cuando `ahora - coalesce(ultimo_aviso_en, inicio_en)` alcanza su intervalo.
+6. "✅ Central en línea" sale solo si la `CENTRAL_DESCONECTADA` que se cierra tenía `ultimo_aviso_en`, es decir, si su caída se avisó.
+7. **Urgencia:** las alarmas de sensor y sus recordatorios van con `Urgency: high` y `ttl = 600`. Los avisos de conexión, de central, de resuelta y de prueba, con `normal` y `3600`.
+8. Los cuerpos de los avisos de conexión y de central terminan con el nombre de la casa ("Sin datos desde las 14:05 · Casa de la abuela"), por si el usuario tiene varias. Si la alarma se cerró con `desactivar`, el de resuelta dice "{usuario} la desactivó".
 
 ### 10.2 Web Push: payload (JSON cifrado)
 
@@ -1538,7 +1546,8 @@ Hay **dos canales**:
 
 - `push`: `self.registration.showNotification(titulo, {body, tag, renotify: true, requireInteraction: tipo === "alarma", icon, badge, vibrate: [400,200,400,200,400], data: payload})`.
 - `notificationclick`: enfoca una ventana abierta de la app o abre `payload.url`.
-- **Acción "Silenciar" (solo Android; iOS no soporta acciones):** `actions: [{action: "silenciar", title: "Silenciar"}]`. En el clic, hace `fetch("/api/v1/casas/{casa_id}/comandos", {method: "POST", credentials: "include", ...})` con `{nodo, accion: "silenciar"}` y el header `Origin` del sitio.
+- **Acción "Silenciar" (solo Android; iOS no soporta acciones):** `actions: [{action: "silenciar", title: "Silenciar"}]`, solo en las alarmas de sensor y sus recordatorios (tag `a-…`). En el clic, hace `fetch("/api/v1/casas/{casa_id}/comandos", {method: "POST", credentials: "include", ...})` con `{nodo, accion: "silenciar"}` y el header `Origin` del sitio. Si falla (sin sesión o sin conexión), abre la app.
+- Íconos: `/icons/icon-192.png` y la insignia monocroma `/icons/badge-96.png`.
 - `pushsubscriptionchange`: vuelve a suscribir y hace POST a `/push/suscripciones`.
 
 ### 10.4 Web Push: manejo de errores de envío
@@ -1548,7 +1557,8 @@ Hay **dos canales**:
 | 201 | `ultimo_exito_en = now`, `fallos_consecutivos = 0` |
 | 404 / 410 | **Borrar** la suscripción (ya no existe) |
 | 413 | Error en el log (el payload no debe superar 4 KB) |
-| 429 / 5xx | `fallos_consecutivos += 1`; reintentar 2 veces con backoff; borrar al llegar a 10 fallos consecutivos |
+| 429 / 5xx o error de red | Reintentar 2 veces (1 s y 3 s). Si todos fallan: `fallos_consecutivos += 1`; borrar al llegar a 10 fallos consecutivos |
+| Otro 4xx (por ejemplo, 403 por claves VAPID que no corresponden) | Error en el log, sin reintentos |
 
 ### 10.5 Web Push: particularidades de iPhone (iOS ≥ 16.4)
 
@@ -1947,7 +1957,10 @@ La IP real se toma de `X-Forwarded-For` **solo** si la petición viene del proxy
 
 ### 12.7 Otros
 
-- No se registran en logs claves, tokens ni endpoints de push completos.
+- No se registran en logs claves, tokens ni endpoints de push completos: de un endpoint solo se registra el servicio (`fcm.googleapis.com`).
+- **Web Push:**
+  - `POST /push/suscripciones` solo acepta endpoints `https` de los servicios de push de los navegadores (`fcm.googleapis.com`, `updates.push.services.mozilla.com`, `*.push.apple.com`, `*.notify.windows.com`). Si no, una suscripción falsa usaría al backend para hacer peticiones a otros sitios o a la red interna;
+  - al arrancar se comprueba que `VAPID_CLAVE_PUBLICA` corresponda a la privada. Si falta o no corresponde, Web Push queda desactivado con un error en el log: con claves cruzadas, el navegador se suscribiría con una y el servidor firmaría con otra, y todos los envíos fallarían.
 - **Telegram:**
   - `TELEGRAM_BOT_TOKEN` es un secreto: quien lo tenga puede escribir como el bot. Solo vive en `.env`.
   - El token va **dentro de la URL** de la Bot API, y `httpx` registra las URL de cada petición en nivel INFO. Por eso: `logging.getLogger("httpx").setLevel(logging.WARNING)`. Además, los errores de `telegram_api.py` se registran solo con el método y el código HTTP, nunca con el `str()` de la excepción, que incluye la URL.

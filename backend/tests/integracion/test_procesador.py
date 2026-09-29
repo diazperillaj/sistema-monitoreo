@@ -1,6 +1,6 @@
 """Procesamiento de los mensajes de la central (§6.3, §6.4) contra PostgreSQL real."""
 
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
 import pytest
@@ -12,49 +12,9 @@ from app.db import crear_fabrica
 from app.services.estado_cache import EstadoCache
 from app.services.procesador import Procesador
 from app.services.ws_hub import HubWs
-from tests.ayudas import Datos, en_bytes, payload
+from tests.ayudas import Datos, HubFalso, Reloj, en_bytes, payload
 
 CASA = "casa-dev"
-
-
-class HubFalso(HubWs):
-    """Guarda lo que se enviaría por WebSocket, como si hubiera un cliente conectado."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.mensajes: list[dict[str, Any]] = []
-
-    def hay_clientes(self, casa_id: int) -> bool:
-        return True
-
-    async def emitir(self, casa_id: int, mensaje: dict[str, Any]) -> None:
-        self.mensajes.append(mensaje)
-
-    def tipos(self) -> list[str]:
-        return [
-            m["tipo"] + (f":{m['evento']}" if m["tipo"] == "alarma" else "") for m in self.mensajes
-        ]
-
-    def vaciar(self) -> None:
-        self.mensajes.clear()
-
-
-class Reloj:
-    """La hora de pared (UTC) y el reloj monotónico del procesador, que avanzan juntos."""
-
-    def __init__(self) -> None:
-        self.ahora = datetime(2026, 9, 27, 19, 5, 10, tzinfo=UTC)  # 14:05:10 en Bogotá
-        self.monotonico = 1000.0
-
-    def __call__(self) -> datetime:
-        return self.ahora
-
-    def cronometro(self) -> float:
-        return self.monotonico
-
-    def avanzar(self, segundos: float) -> None:
-        self.ahora += timedelta(seconds=segundos)
-        self.monotonico += segundos
 
 
 @pytest.fixture

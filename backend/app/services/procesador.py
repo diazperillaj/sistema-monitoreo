@@ -1,7 +1,7 @@
 """Aplica lo que llega de las centrales (§6.3): alarmas, eventos, estado, lecturas y WebSocket.
 
-Cada mensaje se aplica en una sola transacción. Los avisos por WebSocket salen después del
-commit: quien consulte el historial al recibirlos ya encuentra los datos guardados.
+Cada mensaje se aplica en una sola transacción. Las notificaciones y los avisos por WebSocket
+salen después del commit: quien consulte el historial al recibirlos ya encuentra los datos.
 """
 
 import asyncio
@@ -23,12 +23,14 @@ from app.protocolo import EstadoCentral, EventoCentral, nombre_nodo, parsear_est
 from app.schemas.alarmas import alarma_a_esquema
 from app.schemas.comandos import comando_a_esquema
 from app.schemas.eventos import evento_a_esquema
-from app.services import comandos
+from app.services import avisos, comandos
+from app.services.avisos import Aviso
 from app.services.comandos import Resueltos
 from app.services.detector import Abiertas, Transicion, detectar
 from app.services.estado_cache import CasaEnMemoria, EstadoCache, estado_de_casa
 from app.services.eventos_central import eventos_nuevos, se_importa
 from app.services.lecturas import INTERVALO_S, lecturas_de
+from app.services.notificador import Notificador
 from app.services.ws_hub import HubWs
 
 log = logging.getLogger(__name__)
@@ -43,12 +45,13 @@ def ahora_utc() -> datetime:
 
 @dataclass
 class Cambios:
-    """Lo que dejó un mensaje, para avisarlo por WebSocket después del commit."""
+    """Lo que dejó un mensaje, para notificarlo y avisarlo por WebSocket tras el commit."""
 
     central: dict[str, Any] | None = None  # {"online": ..., "cambio_en": ...}
     alarmas: list[tuple[str, models.Alarma, str | None]] = field(default_factory=list)
     eventos: list[tuple[models.Evento, str | None]] = field(default_factory=list)
     comandos: Resueltos = field(default_factory=list)
+    avisos: list[Aviso] = field(default_factory=list)  # notificaciones (§10.1)
 
 
 class Procesador:
@@ -62,10 +65,12 @@ class Procesador:
         cache: EstadoCache,
         reloj: Callable[[], datetime] = ahora_utc,
         cronometro: Callable[[], float] = time.monotonic,
+        notificador: Notificador | None = None,
     ) -> None:
         self.sesiones = sesiones
         self.hub = hub
         self.cache = cache
+        self.notificador = notificador
         self.reloj = reloj
         self.cronometro = cronometro
         self._candado = asyncio.Lock()
@@ -135,7 +140,7 @@ class Procesador:
         estado, alarma = models.EstadoActual, models.Alarma
         async with self._candado:
             ahora = self.reloj()
-            avisos: list[tuple[int, Cambios]] = []
+            por_casa: list[tuple[int, Cambios]] = []
             async with self.sesiones() as db:
                 caidas = await db.execute(
                     select(
@@ -162,10 +167,46 @@ class Procesador:
                         hora = desde.astimezone(ZONA).strftime("%H:%M")
                         texto = f"Central desconectada desde las {hora}"
                         self._evento(db, casa_id, ahora, cambios, "alarma", texto, es_alarma=True)
-                        avisos.append((casa_id, cambios))
+                        nueva.ultimo_aviso_en = ahora
+                        casa = await self._fila_casa(db, casa_id)
+                        cambios.avisos.append(avisos.central_desconectada(nueva, casa.nombre))
+                        por_casa.append((casa_id, cambios))
                 await db.commit()
-            for casa_id, cambios in avisos:
+            for casa_id, cambios in por_casa:
                 await self._avisar(casa_id, cambios, ahora, con_estado=False)
+
+    # ----------------------------------------------------------- recordatorios (§6.2)
+    async def revisar_recordatorios(self) -> None:
+        """Vuelve a avisar las alarmas abiertas cuyo último aviso es más viejo que su
+        intervalo: recordatorio_min las de sensor y recordatorio_conexion_min las de
+        conexión (§10.1). Un intervalo en 0 apaga ese recordatorio."""
+        async with self._candado:
+            ahora = self.reloj()
+            pendientes: list[Aviso] = []
+            async with self.sesiones() as db:
+                filas = await db.execute(
+                    select(models.Alarma, models.Casa)
+                    .join(models.Casa, models.Casa.id == models.Alarma.casa_id)
+                    .where(models.Alarma.fin_en.is_(None))
+                    .order_by(models.Alarma.id)
+                )
+                for alarma, casa in filas.all():
+                    if alarma.tipo in avisos.TIPOS_CONEXION:
+                        minutos = casa.recordatorio_conexion_min
+                        if alarma.tipo == "NODO_SIN_CONEXION" and not casa.avisar_nodo_sin_conexion:
+                            continue
+                    else:
+                        minutos = casa.recordatorio_min
+                    ultimo = alarma.ultimo_aviso_en or alarma.inicio_en
+                    if minutos <= 0 or ahora - ultimo < timedelta(minutes=minutos):
+                        continue
+                    alarma.ultimo_aviso_en = ahora  # se marca antes de enviar: nunca sale dos veces
+                    pendientes.append(avisos.recordatorio(alarma, casa.nombre, ahora))
+                if pendientes:
+                    await db.commit()
+            if self.notificador is not None:
+                for aviso in pendientes:
+                    self.notificador.avisar(aviso)
 
     # ----------------------------------------------------------- comandos_timeout (§6.2)
     async def vencer_comandos(self, timeout_s: float) -> None:
@@ -212,6 +253,9 @@ class Procesador:
                 self._evento(
                     db, casa_id, ahora, cambios, "alarma", texto, nodo_id=t.nodo_id, es_alarma=True
                 )
+                alarma.ultimo_aviso_en = ahora
+                casa = await self._fila_casa(db, casa_id)
+                cambios.avisos.append(avisos.alarma_abierta(alarma, casa.nombre))
         elif t.tipo == "alarma_cierra" and t.tipo_alarma:
             comando = await self._comando_que_cierra(db, casa_id, t.nodo_id, ahora)
             usuario_id = comando.usuario_id if comando else None
@@ -239,6 +283,10 @@ class Procesador:
                     usuario_id=usuario_id,
                     usuario=usuario,
                 )
+                casa = await self._fila_casa(db, casa_id)
+                if casa.avisar_resueltas:
+                    accion = comando.accion if comando else None
+                    cambios.avisos.append(avisos.alarma_resuelta(alarma, usuario, accion))
         elif t.tipo == "nodo_offline":
             desde = ahora - timedelta(seconds=t.hace_s)  # cuando dejó de reportar
             alarma = await self._abrir(db, casa_id, t.nodo_id, "NODO_SIN_CONEXION", desde)
@@ -255,6 +303,10 @@ class Procesador:
                     nodo_id=t.nodo_id,
                     es_alarma=True,
                 )
+                casa = await self._fila_casa(db, casa_id)
+                if casa.avisar_nodo_sin_conexion:
+                    alarma.ultimo_aviso_en = ahora
+                    cambios.avisos.append(avisos.nodo_sin_conexion(alarma, casa.nombre))
         elif t.tipo == "nodo_online":
             alarma = await self._cerrar(
                 db, casa_id, t.nodo_id, "NODO_SIN_CONEXION", ahora, "automatica"
@@ -293,6 +345,10 @@ class Procesador:
             texto = "La central volvió a conectarse" if cerrada else "La central se conectó"
             self._evento(db, casa_id, ahora, cambios, "central", texto)
             cambios.central = {"online": True, "cambio_en": ahora.isoformat()}
+        if cerrada is not None and cerrada.ultimo_aviso_en is not None:
+            # Solo si se avisó la caída (§10.1): una caída corta no llega a ser alarma
+            casa = await self._fila_casa(db, casa_id)
+            cambios.avisos.append(avisos.central_en_linea(casa_id, casa.nombre))
 
     async def _fuera_de_linea(
         self, db: AsyncSession, casa_id: int, ahora: datetime, cambios: Cambios
@@ -315,6 +371,14 @@ class Procesador:
         if casa is None and codigo not in self._desconocidas:
             self._desconocidas.add(codigo)
             log.warning("Llegan mensajes de la central %s, pero esa casa no existe", codigo)
+        return casa
+
+    @staticmethod
+    async def _fila_casa(db: AsyncSession, casa_id: int) -> models.Casa:
+        """Nombre y ajustes de avisos de la casa (queda en la sesión: una consulta)."""
+        casa = await db.get(models.Casa, casa_id)
+        if casa is None:
+            raise LookupError(f"no existe la casa {casa_id}")
         return casa
 
     @staticmethod
@@ -518,6 +582,9 @@ class Procesador:
     async def _avisar(
         self, casa_id: int, cambios: Cambios, ahora: datetime, *, con_estado: bool
     ) -> None:
+        if self.notificador is not None:  # en segundo plano: no frena la ingesta (§10.1)
+            for aviso in cambios.avisos:
+                self.notificador.avisar(aviso)
         if not self.hub.hay_clientes(casa_id):
             return
         if cambios.central is not None:

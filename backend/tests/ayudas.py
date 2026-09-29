@@ -1,8 +1,10 @@
 """Constantes y utilidades compartidas por las pruebas."""
 
 import json
+import secrets
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -15,7 +17,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models
 from app.config import Settings
 from app.protocolo import EstadoCentral
+from app.services.avisos import Aviso
 from app.services.mqtt_cliente import EstadoMqtt
+from app.services.webpush import CanalWebPush, Destino, Entrega, Resultado
+from app.services.ws_hub import HubWs
 
 RAIZ_BACKEND = Path(__file__).resolve().parent.parent
 RAIZ_REPO = RAIZ_BACKEND.parent
@@ -78,6 +83,66 @@ class MqttFalso(EstadoMqtt):
         self.publicados.append((topico, carga))
 
 
+class HubFalso(HubWs):
+    """Guarda lo que se enviaría por WebSocket, como si hubiera un cliente conectado."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.mensajes: list[dict[str, Any]] = []
+
+    def hay_clientes(self, casa_id: int) -> bool:
+        return True
+
+    async def emitir(self, casa_id: int, mensaje: dict[str, Any]) -> None:
+        self.mensajes.append(mensaje)
+
+    def tipos(self) -> list[str]:
+        return [
+            m["tipo"] + (f":{m['evento']}" if m["tipo"] == "alarma" else "") for m in self.mensajes
+        ]
+
+    def vaciar(self) -> None:
+        self.mensajes.clear()
+
+
+class Reloj:
+    """La hora de pared (UTC) y el reloj monotónico del procesador, que avanzan juntos."""
+
+    def __init__(self) -> None:
+        self.ahora = datetime(2026, 9, 27, 19, 5, 10, tzinfo=UTC)  # 14:05:10 en Bogotá
+        self.monotonico = 1000.0
+
+    def __call__(self) -> datetime:
+        return self.ahora
+
+    def cronometro(self) -> float:
+        return self.monotonico
+
+    def avanzar(self, segundos: float) -> None:
+        self.ahora += timedelta(seconds=segundos)
+        self.monotonico += segundos
+
+
+class CanalFalso(CanalWebPush):
+    """Web Push activo y sin red: guarda cada envío y responde lo indicado por endpoint."""
+
+    def __init__(self) -> None:
+        super().__init__(None, "mailto:prueba@ejemplo.com")
+        self.envios: list[tuple[Aviso, list[Destino]]] = []
+        self.respuestas: dict[str, Entrega] = {}
+
+    @property
+    def activo(self) -> bool:
+        return True
+
+    async def enviar(self, destinos: list[Destino], aviso: Aviso) -> list[Resultado]:
+        self.envios.append((aviso, list(destinos)))
+        return [Resultado(d.id, self.respuestas.get(d.endpoint, "entregado")) for d in destinos]
+
+    def titulos(self) -> list[str]:
+        return [aviso.titulo for aviso, _ in self.envios]
+
+
 def migrar(url: str, destino: str = "head", *, bajar: bool = False) -> None:
     """Corre Alembic contra `url` (usa asyncio.run: no llamar con un bucle en marcha)."""
     config = Config(str(RAIZ_BACKEND / "alembic.ini"))
@@ -119,3 +184,15 @@ class Datos:
     async def miembro(self, usuario: models.Usuario, casa: models.Casa, rol: str = "admin") -> None:
         self.db.add(models.Miembro(usuario_id=usuario.id, casa_id=casa.id, rol=rol))
         await self.db.commit()
+
+    async def suscripcion(self, usuario: models.Usuario, **campos: Any) -> models.SuscripcionPush:
+        """Un dispositivo con notificaciones activas (endpoint de FCM inventado)."""
+        valores = {
+            "endpoint": f"https://fcm.googleapis.com/fcm/send/{secrets.token_urlsafe(12)}",
+            "p256dh": "B" + "p" * 86,
+            "auth": "a" * 22,
+        }
+        suscripcion = models.SuscripcionPush(usuario_id=usuario.id, **(valores | campos))
+        self.db.add(suscripcion)
+        await self.db.commit()
+        return suscripcion

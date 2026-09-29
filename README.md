@@ -5,6 +5,7 @@ Se publica en `https://sistemamonitoreo.duckdns.org` a través del Caddy que ya 
 
 - **Especificación completa:** [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md)
 - **Plan de implementación:** [`docs/PLAN_IMPLEMENTACION.md`](docs/PLAN_IMPLEMENTACION.md)
+- **Cómo probar cada fase a mano:** [`docs/PRUEBAS_MANUALES.md`](docs/PRUEBAS_MANUALES.md)
 - **Instrucciones para Claude Code:** [`CLAUDE.md`](CLAUDE.md)
 - **Firmware de referencia:** [`firmware/`](firmware/)
 
@@ -17,6 +18,7 @@ Requisitos: Docker, Node 24, Python 3.12 con [uv](https://docs.astral.sh/uv/) y,
 1. `cp .env.example .env` y ajustar para desarrollo: `DOMINIO=localhost`, `RED_PROXY=alarma_proxy_dev`,
    `ENTORNO=desarrollo`, `ORIGEN_PERMITIDO=http://localhost:5173,http://localhost:8011`, y claves
    aleatorias (`openssl rand -hex 24`) en `POSTGRES_PASSWORD`, `MQTT_CLAVE` y `CLAVE_CENTRAL`.
+   Las claves de Web Push salen de `cd backend && uv run python -m app.cli generar-vapid`.
 2. Red, certificados y usuarios de Mosquitto:
 
    ```bash

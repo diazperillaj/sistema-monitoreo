@@ -329,6 +329,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/push/clave-publica": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Clave Publica
+         * @description Pública: el navegador la necesita para suscribirse.
+         */
+        get: operations["clave_publica_api_v1_push_clave_publica_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/push/suscripciones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Suscribir
+         * @description Guarda la suscripción de este dispositivo. Si ya existía (otra persona entró en el
+         *     mismo celular), pasa al usuario actual.
+         */
+        post: operations["suscribir_api_v1_push_suscripciones_post"];
+        /**
+         * Dar De Baja
+         * @description Este dispositivo deja de recibir notificaciones. Solo borra una suscripción propia.
+         */
+        delete: operations["dar_de_baja_api_v1_push_suscripciones_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notificaciones/preferencias": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ver */
+        get: operations["ver_api_v1_notificaciones_preferencias_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Cambiar
+         * @description `webpush: false` pausa las notificaciones en todos sus dispositivos sin borrarlos.
+         */
+        patch: operations["cambiar_api_v1_notificaciones_preferencias_patch"];
+        trace?: never;
+    };
+    "/api/v1/notificaciones/prueba": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Probar
+         * @description Envía "🔔 Notificación de prueba" a los dispositivos del usuario. Responde cuántos.
+         */
+        post: operations["probar_api_v1_notificaciones_prueba_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -378,6 +464,11 @@ export interface components {
             /** Avisos Enviados */
             avisos_enviados: number;
         };
+        /** BajaSuscripcion */
+        BajaSuscripcion: {
+            /** Endpoint */
+            endpoint: string;
+        };
         /**
          * CambioAjustes
          * @description Solo cambian los campos que se envían.
@@ -405,6 +496,13 @@ export interface components {
             clave_actual: string;
             /** Clave Nueva */
             clave_nueva: string;
+        };
+        /** CambioPreferencias */
+        CambioPreferencias: {
+            /** Webpush */
+            webpush?: boolean | null;
+            /** Telegram */
+            telegram?: boolean | null;
         };
         /** Casa */
         Casa: {
@@ -439,6 +537,18 @@ export interface components {
             codigo: string;
             /** Nombre */
             nombre: string;
+        };
+        /** ClavePublica */
+        ClavePublica: {
+            /** Clave */
+            clave: string;
+        };
+        /** ClavesPush */
+        ClavesPush: {
+            /** P256Dh */
+            p256dh: string;
+            /** Auth */
+            auth: string;
         };
         /** Comando */
         Comando: {
@@ -620,6 +730,15 @@ export interface components {
             /** Hace */
             hace: number;
         };
+        /**
+         * NuevaSuscripcion
+         * @description Lo que entrega PushSubscription.toJSON() en el navegador.
+         */
+        NuevaSuscripcion: {
+            /** Endpoint */
+            endpoint: string;
+            keys: components["schemas"]["ClavesPush"];
+        };
         /** PaginaAlarmas */
         PaginaAlarmas: {
             /** Items */
@@ -633,6 +752,48 @@ export interface components {
             items: components["schemas"]["Evento"][];
             /** Siguiente */
             siguiente: number | null;
+        };
+        /** Preferencias */
+        Preferencias: {
+            webpush: components["schemas"]["PreferenciasWebPush"];
+            telegram: components["schemas"]["PreferenciasTelegram"];
+        };
+        /** PreferenciasTelegram */
+        PreferenciasTelegram: {
+            /** Disponible */
+            disponible: boolean;
+            /** Bot */
+            bot: string | null;
+            /** Vinculado */
+            vinculado: boolean;
+            /** Cuenta */
+            cuenta: string | null;
+            /** Vinculado En */
+            vinculado_en: string | null;
+            /** Activo */
+            activo: boolean;
+        };
+        /** PreferenciasWebPush */
+        PreferenciasWebPush: {
+            /** Activo */
+            activo: boolean;
+            /** Dispositivos */
+            dispositivos: number;
+        };
+        /** Prueba */
+        Prueba: {
+            /**
+             * Canal
+             * @enum {string}
+             */
+            canal: "webpush" | "telegram" | "todos";
+        };
+        /** ResultadoPrueba */
+        ResultadoPrueba: {
+            /** Webpush */
+            webpush: number;
+            /** Telegram */
+            telegram: boolean;
         };
         /** ResumenCasa */
         ResumenCasa: {
@@ -1831,6 +1992,291 @@ export interface operations {
             };
             /** @description No encontrado */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    clave_publica_api_v1_push_clave_publica_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClavePublica"];
+                };
+            };
+            /** @description El servidor no tiene claves VAPID */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    suscribir_api_v1_push_suscripciones_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NuevaSuscripcion"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Solicitud inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Sin permiso u origen inválido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    dar_de_baja_api_v1_push_suscripciones_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BajaSuscripcion"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Solicitud inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Sin permiso u origen inválido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    ver_api_v1_notificaciones_preferencias_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Preferencias"];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    cambiar_api_v1_notificaciones_preferencias_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CambioPreferencias"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Preferencias"];
+                };
+            };
+            /** @description Solicitud inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Sin permiso u origen inválido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conflicto */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    probar_api_v1_notificaciones_prueba_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Prueba"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResultadoPrueba"];
+                };
+            };
+            /** @description Solicitud inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Sin permiso u origen inválido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conflicto */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Servicio no disponible */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

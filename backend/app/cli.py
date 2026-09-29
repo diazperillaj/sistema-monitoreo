@@ -3,6 +3,7 @@
     docker compose exec api python -m app.cli crear-superadmin --email tu@correo.com --nombre "Juan Pablo"
     docker compose exec api python -m app.cli crear-casa --codigo casa-abuela-x7k2 --nombre "Casa de la abuela" --admin tu@correo.com
     docker compose exec api python -m app.cli reset-clave --email persona@correo.com
+    docker compose run --rm api python -m app.cli generar-vapid
 
 Y en desarrollo, desde backend/: uv run python -m app.cli exportar-openapi > ../frontend/openapi.json
 """
@@ -27,6 +28,7 @@ from app.config import Settings, obtener_settings
 from app.db import crear_fabrica, crear_motor
 from app.main import create_app
 from app.services.auth import hashear_clave
+from app.services.webpush import generar_claves
 
 # exportar-openapi no se conecta a la base: la URL solo completa la configuración
 URL_SOLO_ESQUEMA = "postgresql+asyncpg://openapi@localhost/openapi"
@@ -157,6 +159,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--email", required=True)
     p = comandos.add_parser("exportar-openapi", help="escribe el contrato OpenAPI (§11.7)")
     p.add_argument("--salida", help="archivo de destino; por defecto, la salida estándar")
+    comandos.add_parser("generar-vapid", help="crea las claves de Web Push para el .env (§5.6)")
     args = parser.parse_args(argv)
 
     # UTF-8 y saltos de línea LF también en Windows, aunque la salida vaya a un archivo
@@ -168,6 +171,12 @@ def main(argv: list[str] | None = None) -> int:
             Path(args.salida).write_text(contenido, encoding="utf-8", newline="\n")
         else:
             sys.stdout.write(contenido)
+        return 0
+    if args.comando == "generar-vapid":
+        publica, privada = generar_claves()
+        print("Copia estas dos líneas al .env (la privada no se comparte ni se sube al repo):")
+        print(f"VAPID_CLAVE_PUBLICA={publica}")
+        print(f"VAPID_CLAVE_PRIVADA={privada}")
         return 0
     try:
         asyncio.run(ejecutar(args))
