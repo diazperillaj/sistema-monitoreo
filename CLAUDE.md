@@ -7,10 +7,11 @@ Sistema de monitoreo con ESP32. Solo la app: 3 contenedores (mosquitto, api = Fa
 - Python con uv: `cd backend && uv sync`. Pruebas: `uv run pytest -q` (desde F1 usa testcontainers: requiere Docker). Lint: `uv run ruff check . ../tools && uv run ruff format --check . ../tools`
 - Frontend (Node 24): `cd frontend && npm run dev` → http://localhost:5173 (proxy a la API en :8011). Pruebas: `npm test`. Lint: `npm run lint`. TypeScript fijo en ~5.9 (no subir a 7: rompe typescript-eslint y openapi-typescript).
 - Tipos de la API en el frontend: `uv run python -m app.cli exportar-openapi > ../frontend/openapi.json` y luego `npm run tipos`.
-- Migraciones: `uv run alembic revision --autogenerate --rev-id <NNNN> -m "..."` y revisar a mano los índices parciales (§7.3).
+- Migraciones: desde backend/, contra la base de desarrollo: `DATABASE_URL=postgresql+asyncpg://alarma:<POSTGRES_PASSWORD>@localhost:5434/alarma uv run alembic revision --autogenerate --rev-id <NNNN> -m "..."`, y revisar a mano los índices parciales (§7.3). La API las aplica sola al arrancar.
+- Base de desarrollo: superadmin `admin@ejemplo.com` (clave en `ADMIN_DEV_CLAVE` del `.env`) y casa `casa-dev`, la del simulador.
 - Simulador de central (desde backend/): `uv run python ../tools/simulador_central.py --casa casa-dev --clave <CLAVE_CENTRAL del .env>`; escribe `ayuda` para ver el menú.
 - Notificaciones: Web Push (base) + Telegram opcional por usuario (long polling, sin webhook). Con TELEGRAM_BOT_TOKEN vacío el canal se desactiva.
-- Fase actual: F1 (F0 terminada)
+- Fase actual: F2 (F0 y F1 terminadas)
 
 ## Cómo trabajar en este repo
 - Antes de cada fase, releer en docs/ARQUITECTURA.md la fase (§14) y las secciones que cita.

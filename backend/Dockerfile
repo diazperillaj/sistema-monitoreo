@@ -23,4 +23,4 @@ COPY --from=web /web/dist ./frontend
 RUN useradd --system --uid 10001 app
 USER app
 EXPOSE 8011
-CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8011 --workers 1 --proxy-headers --forwarded-allow-ips \"$IPS_PROXY_CONFIABLES\""]
+CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:create_app --factory --host 0.0.0.0 --port 8011 --workers 1 --proxy-headers --forwarded-allow-ips \"$IPS_PROXY_CONFIABLES\""]

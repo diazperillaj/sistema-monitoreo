@@ -1,14 +1,13 @@
 """Frontend servido por FastAPI: respaldo SPA, 404 JSON de la API, caché y cabeceras (§6.7)."""
 
-from collections.abc import Callable
 from pathlib import Path
 
 import httpx
 import pytest
 
 from app.web import archivo_del_build
+from tests.ayudas import CrearCliente
 
-CrearCliente = Callable[..., httpx.AsyncClient]
 NO_ENCONTRADO = {"detail": {"codigo": "no_encontrado", "mensaje": "Ruta de la API inexistente."}}
 
 

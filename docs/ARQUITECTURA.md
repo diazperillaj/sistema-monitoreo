@@ -1,6 +1,6 @@
 # Sistema de monitoreo doméstico — Arquitectura del backend
 
-> **Versión:** 1.10 · **Fecha:** 28/09/2026 · **Autor:** Juan Pablo (con Claude)
+> **Versión:** 1.11 · **Fecha:** 28/09/2026 · **Autor:** Juan Pablo (con Claude)
 > **Objetivo del documento:** especificación completa para desarrollar el backend y la app web con Claude Code.
 > **Alcance:** backend, infraestructura y frontend. **El firmware de las ESP32 ya existe y NO se modifica**; solo se le cambian valores de configuración (§12.9).
 >
@@ -18,6 +18,8 @@
 > **Cambios en 1.9:** decisiones S10–S14 (§17), tras contrastar la especificación con el firmware: recordatorios de conexión espaciados, detección de eventos nuevos de la central sin hash, lecturas solo de nodos en línea, mensajes retenidos que no cambian `recibido_en` y usuario MQTT del backend `backend_api`. Además se precisan `cerrada_por = "automatica"`, los cambios de horario de la habitación, la interpolación de contadores, el orden de arranque de Mosquitto y el contenido de cada fase (§14), cuyo detalle está en [`PLAN_IMPLEMENTACION.md`](PLAN_IMPLEMENTACION.md).
 >
 > **Cambios en 1.10 (F0):** Mosquitto 2.1 con la configuración montada en solo lectura, dependencias de Python fijadas con `uv.lock`, CSP propia para `/api/v1/docs`, puerto de PostgreSQL configurable en desarrollo y simulador con `paho-mqtt`.
+>
+> **Cambios en 1.11 (F1):** códigos de error `clave_incorrecta` y `codigo_en_uso`, rol efectivo del superadmin, `Origin` obligatorio en los métodos no seguros y uvicorn con `--factory`.
 
 ---
 
@@ -592,7 +594,7 @@ COPY --from=web /web/dist ./frontend
 RUN useradd --system --uid 10001 app
 USER app
 EXPOSE 8011
-CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8011 --workers 1 --proxy-headers --forwarded-allow-ips \"$IPS_PROXY_CONFIABLES\""]
+CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:create_app --factory --host 0.0.0.0 --port 8011 --workers 1 --proxy-headers --forwarded-allow-ips \"$IPS_PROXY_CONFIABLES\""]
 ```
 
 - **Orden de las capas:** si solo cambia el código de Python, no se reinstalan dependencias. Si solo cambia el backend, la etapa de Node se reutiliza desde la caché de Docker.
@@ -1241,11 +1243,11 @@ La tarea `mantenimiento` (§6.2) borra por lotes (`DELETE ... WHERE ctid IN (SEL
 
 | HTTP | Códigos usados |
 |---|---|
-| 400 | `solicitud_invalida` |
+| 400 | `solicitud_invalida` (con `campos`: los datos que fallaron), `clave_incorrecta` |
 | 401 | `no_autenticado`, `credenciales_invalidas` |
 | 403 | `sin_permiso`, `origen_invalido` |
 | 404 | `no_encontrado` |
-| 409 | `central_desconectada`, `nodo_sin_conexion`, `invitacion_usada`, `email_en_uso`, `telegram_no_disponible`, `telegram_no_vinculado` |
+| 409 | `central_desconectada`, `nodo_sin_conexion`, `invitacion_usada`, `email_en_uso`, `codigo_en_uso`, `telegram_no_disponible`, `telegram_no_vinculado` |
 | 410 | `invitacion_vencida` |
 | 429 | `demasiados_intentos` |
 
@@ -1266,13 +1268,13 @@ El superadmin siempre cumple M y A.
 | POST | `/auth/login` | pública | `{email, clave}` | 200 `Usuario` + `Set-Cookie` · 401 · 429 |
 | POST | `/auth/logout` | sesión | — | 204, borra la sesión y la cookie |
 | GET | `/auth/yo` | sesión | — | 200 `{usuario, casas:[{id, nombre, rol}]}` |
-| POST | `/auth/cambiar-clave` | sesión | `{clave_actual, clave_nueva}` | 204; cierra las demás sesiones |
+| POST | `/auth/cambiar-clave` | sesión | `{clave_actual, clave_nueva}` | 204; cierra las demás sesiones · 400 `clave_incorrecta` (no 401: la app no debe cerrar la sesión por un error al escribir) |
 | GET | `/auth/sesiones` | sesión | — | Lista de mis sesiones (dispositivo, último uso) |
 | DELETE | `/auth/sesiones/{id}` | sesión | — | 204 |
 
 `Usuario = {id, email, nombre, es_superadmin}`
 
-La clave debe tener mínimo 10 caracteres.
+La clave debe tener mínimo 10 caracteres. En `/auth/yo` y `GET /casas`, el superadmin aparece como `admin` en las casas de las que no es miembro (su rol efectivo).
 
 ### 8.2 Invitaciones (alta de usuarios)
 
@@ -1293,9 +1295,11 @@ No hay registro abierto. El admin genera un enlace y lo comparte (por ejemplo, p
 | GET | `/casas` | sesión | `[{id, codigo, nombre, rol, online, alarmas_abiertas}]` |
 | GET | `/casas/{casa_id}` | M | `Casa` (con ajustes) |
 | GET | `/casas/{casa_id}/estado` | M | `EstadoCasa` |
-| POST | `/casas` | S | `{codigo, nombre}` → 201 `Casa` |
+| POST | `/casas` | S | `{codigo, nombre}` → 201 `Casa`, con los ajustes por defecto del `.env` · 409 `codigo_en_uso` |
 | PATCH | `/casas/{casa_id}` | A | `{nombre?}` |
 | GET / PATCH | `/casas/{casa_id}/ajustes` | M / A | `{recordatorio_min, recordatorio_conexion_min, minutos_central_caida, avisar_nodo_sin_conexion, avisar_resueltas}` |
+
+`Casa = {id, codigo, nombre, creada_en, ajustes}`. A quien no es miembro de una casa se le responde 403, exista o no: no se le confirma su existencia. Solo el superadmin recibe 404 por una casa inexistente.
 
 ```jsonc
 // EstadoCasa
@@ -1861,7 +1865,7 @@ En el `.env` de desarrollo: `ORIGEN_PERMITIDO=http://localhost:5173,http://local
 ### 12.3 CSRF
 
 - `SameSite=Lax` en la cookie.
-- En **todo método no seguro** (POST, PUT, PATCH, DELETE), el header `Origin` debe estar en `ORIGEN_PERMITIDO` (lista separada por comas; en producción, solo `https://sistemamonitoreo.duckdns.org`). Si no, 403 `origen_invalido`.
+- En **todo método no seguro** (POST, PUT, PATCH, DELETE), el header `Origin` debe estar en `ORIGEN_PERMITIDO` (lista separada por comas; en producción, solo `https://sistemamonitoreo.duckdns.org`). Si no, 403 `origen_invalido`. Sin `Origin` también se rechaza: los navegadores lo envían siempre en estos métodos, y para probar con `curl` hay que agregarlo.
 - El WebSocket también valida `Origin`.
 
 ### 12.4 Rate limiting

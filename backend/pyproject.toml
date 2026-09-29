@@ -12,6 +12,8 @@ dependencies = [
     "asyncpg>=0.29",
     "alembic>=1.13",
     "aiomqtt>=2,<3",
+    "pwdlib[argon2]>=0.2",
+    "email-validator>=2.1",
 ]
 
 [dependency-groups]
@@ -22,10 +24,13 @@ dev = [
     "httpx>=0.27",
     "ruff>=0.6",
     "paho-mqtt>=2.1",  # simulador de la central (tools/)
+    "testcontainers[postgres]>=4.8",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
 asyncio_mode = "auto"
-asyncio_default_fixture_loop_scope = "function"
+# Un solo bucle para toda la sesión: la base de pruebas y sus conexiones se comparten
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"

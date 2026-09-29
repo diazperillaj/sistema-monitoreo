@@ -1,6 +1,7 @@
 """Entorno de Alembic con la plantilla async (§7): corre las migraciones sobre asyncpg."""
 
 import asyncio
+import os
 from logging.config import fileConfig
 
 from alembic import context
@@ -8,18 +9,18 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from app.config import obtener_settings
+from app.models import Base
 
 config = context.config
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
-# Los modelos (app.models) llegan en F1; hasta entonces no hay metadatos que comparar.
-target_metadata = None
+target_metadata = Base.metadata
 
 
 def url_de_la_base() -> str:
-    url = obtener_settings().database_url
+    """La de sqlalchemy.url si alguien la fijó (las pruebas lo hacen); si no, DATABASE_URL."""
+    url = config.get_main_option("sqlalchemy.url") or os.environ.get("DATABASE_URL")
     if not url:
         raise RuntimeError(
             "Falta DATABASE_URL: la arma docker-compose.yml con los valores POSTGRES_*."

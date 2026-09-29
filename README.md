@@ -25,6 +25,14 @@ Requisitos: Docker, Node 24, Python 3.12 con [uv](https://docs.astral.sh/uv/) y,
    ./scripts/usuario_mqtt.sh backend_api "<MQTT_CLAVE del .env>"
    ./scripts/usuario_mqtt.sh casa-dev "<CLAVE_CENTRAL del .env>"
    ```
+3. Con los contenedores arriba, un superadmin y la casa del simulador:
+
+   ```bash
+   docker compose exec api python -m app.cli crear-superadmin --email admin@ejemplo.com --nombre "Admin"
+   docker compose exec api python -m app.cli crear-casa --codigo casa-dev --nombre "Casa de desarrollo" --admin admin@ejemplo.com
+   ```
+
+La documentación interactiva de la API queda en http://localhost:8011/api/v1/docs.
 
 **Cada día:**
 

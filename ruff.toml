@@ -7,4 +7,4 @@ select = ["E", "W", "F", "I", "UP", "B", "SIM", "ASYNC"]
 ignore = ["E501"]  # el formateador corta el código; los textos largos se dejan como están
 
 [lint.isort]
-known-first-party = ["app"]
+known-first-party = ["app", "tests"]

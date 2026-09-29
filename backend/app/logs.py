@@ -20,10 +20,12 @@ class FormatoJson(logging.Formatter):
 
 
 def configurar_logs(nivel: str) -> None:
-    manejador = logging.StreamHandler(sys.stdout)
-    manejador.setFormatter(FormatoJson())
+    """Idempotente: agrega el manejador JSON una sola vez y respeta los que ya existan."""
     raiz = logging.getLogger()
-    raiz.handlers[:] = [manejador]
+    if not any(isinstance(manejador.formatter, FormatoJson) for manejador in raiz.handlers):
+        manejador = logging.StreamHandler(sys.stdout)
+        manejador.setFormatter(FormatoJson())
+        raiz.addHandler(manejador)
     raiz.setLevel(nivel.upper())
     # uvicorn trae sus propios manejadores: que todo pase por el de la raíz
     for nombre in ("uvicorn", "uvicorn.error", "uvicorn.access"):
