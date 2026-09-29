@@ -10,24 +10,32 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 
 from app import __version__
-from app.api import ajustes, alarmas, auth, casas, eventos, salud, ws
+from app.api import ajustes, alarmas, auth, casas, comandos, eventos, salud, ws
 from app.config import Settings, obtener_settings
 from app.db import crear_fabrica, crear_motor
 from app.logs import configurar_logs
 from app.seguridad import Limites, SeguridadApi
 from app.services.estado_cache import EstadoCache
-from app.services.mqtt_ingesta import EstadoMqtt
+from app.services.mqtt_cliente import EstadoMqtt
 from app.services.procesador import Procesador
 from app.services.ws_hub import HubWs
 from app.tareas import tareas_de_fondo
 from app.web import CabecerasSeguridad, montar_frontend
 
-ROUTERS = (salud.router, auth.router, casas.router, ajustes.router, alarmas.router, eventos.router)
+ROUTERS = (
+    salud.router,
+    auth.router,
+    casas.router,
+    ajustes.router,
+    comandos.router,
+    alarmas.router,
+    eventos.router,
+)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    async with tareas_de_fondo(app):  # ingesta MQTT y vigilante de centrales (§6.2)
+    async with tareas_de_fondo(app):  # ingesta MQTT, vigilante y vencimiento de comandos (§6.2)
         yield
     await app.state.motor.dispose()
 

@@ -508,3 +508,58 @@ async def test_online_con_valor_invalido_se_ignora(
 ) -> None:
     await procesador.recibir_online(CASA, b"conectado")
     assert await fila_estado(db, casa) is None
+
+
+# ------------------------------------------------------------------ comandos (§6.5)
+async def comandos_guardados(db: AsyncSession) -> list[models.Comando]:
+    consulta = select(models.Comando).order_by(models.Comando.id)
+    return list((await db.scalars(consulta.execution_options(populate_existing=True))).all())
+
+
+async def test_un_estado_confirma_los_comandos_pendientes(
+    procesador: Procesador,
+    db: AsyncSession,
+    datos: Datos,
+    casa: models.Casa,
+    hub: HubFalso,
+    reloj: Reloj,
+) -> None:
+    laura = await datos.usuario("laura@ejemplo.com", nombre="Laura")
+    await estado_de(procesador)
+    await comando(db, casa, laura, 2, "desactivar", reloj.ahora)
+    await estado_de(procesador)  # todavía con el baño activo
+    [pendiente] = await comandos_guardados(db)
+    assert pendiente.estado == "pendiente"
+
+    hub.vaciar()
+    reloj.avanzar(2)
+    await estado_de(procesador, n2={"hab": 0})
+    [confirmado] = await comandos_guardados(db)
+    assert (confirmado.estado, confirmado.resuelto_en) == ("confirmado", reloj.ahora)
+    assert hub.tipos() == ["comando", "estado"]
+    assert hub.mensajes[0]["data"]["estado"] == "confirmado"
+    assert hub.mensajes[0]["data"]["usuario"] == {"id": laura.id, "nombre": "Laura"}
+
+
+async def test_los_comandos_vencen_sin_confirmar(
+    procesador: Procesador,
+    db: AsyncSession,
+    datos: Datos,
+    casa: models.Casa,
+    hub: HubFalso,
+    reloj: Reloj,
+) -> None:
+    laura = await datos.usuario("laura@ejemplo.com", nombre="Laura")
+    await comando(db, casa, laura, 2, "silenciar", reloj.ahora)
+    reloj.avanzar(5)
+    await procesador.vencer_comandos(8)
+    assert [c.estado for c in await comandos_guardados(db)] == ["pendiente"]
+    assert hub.mensajes == []
+
+    reloj.avanzar(4)
+    await procesador.vencer_comandos(8)
+    [vencido] = await comandos_guardados(db)
+    assert (vencido.estado, vencido.resuelto_en) == ("sin_confirmar", reloj.ahora)
+    assert (await textos(db))[-1] == "La central no confirmó el comando de Laura: silenciar Baño"
+    assert hub.tipos() == ["evento", "comando"]
+    assert hub.mensajes[1]["data"]["estado"] == "sin_confirmar"

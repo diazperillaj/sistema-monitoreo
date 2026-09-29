@@ -21,7 +21,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app import models
 from app.protocolo import EstadoCentral, EventoCentral, nombre_nodo, parsear_estado, texto_alarma
 from app.schemas.alarmas import alarma_a_esquema
+from app.schemas.comandos import comando_a_esquema
 from app.schemas.eventos import evento_a_esquema
+from app.services import comandos
+from app.services.comandos import Resueltos
 from app.services.detector import Abiertas, Transicion, detectar
 from app.services.estado_cache import CasaEnMemoria, EstadoCache, estado_de_casa
 from app.services.eventos_central import eventos_nuevos, se_importa
@@ -45,6 +48,7 @@ class Cambios:
     central: dict[str, Any] | None = None  # {"online": ..., "cambio_en": ...}
     alarmas: list[tuple[str, models.Alarma, str | None]] = field(default_factory=list)
     eventos: list[tuple[models.Evento, str | None]] = field(default_factory=list)
+    comandos: Resueltos = field(default_factory=list)
 
 
 class Procesador:
@@ -90,6 +94,8 @@ class Procesador:
                     await self._en_linea(db, casa.casa_id, ahora, cambios, abiertas)
                 for transicion in detectar(casa.previo, nuevo, abiertas):
                     await self._aplicar(db, casa.casa_id, transicion, ahora, cambios)
+                if not retenido:  # un retenido no prueba que la central aplicó nada
+                    cambios.comandos += await comandos.confirmar(db, casa.casa_id, nuevo, ahora)
                 anteriores = casa.previo.eventos if casa.previo else None
                 self._importar_eventos(db, casa.casa_id, anteriores, nuevo, ahora, cambios)
                 await self._guardar_estado(db, casa.casa_id, crudo, ahora, retenido)
@@ -159,6 +165,36 @@ class Procesador:
                         avisos.append((casa_id, cambios))
                 await db.commit()
             for casa_id, cambios in avisos:
+                await self._avisar(casa_id, cambios, ahora, con_estado=False)
+
+    # ----------------------------------------------------------- comandos_timeout (§6.2)
+    async def vencer_comandos(self, timeout_s: float) -> None:
+        """Marca sin_confirmar los comandos que la central no confirmó a tiempo (§6.5)."""
+        async with self._candado:
+            ahora = self.reloj()
+            por_casa: dict[int, Cambios] = {}
+            async with self.sesiones() as db:
+                limite = ahora - timedelta(seconds=timeout_s)
+                for comando, nombre in await comandos.vencer(db, limite, ahora):
+                    cambios = por_casa.setdefault(comando.casa_id, Cambios())
+                    cambios.comandos.append((comando, nombre))
+                    texto = comandos.texto_sin_confirmar(
+                        nombre, comando.accion, comando.nodo_id, comando.sub
+                    )
+                    self._evento(
+                        db,
+                        comando.casa_id,
+                        ahora,
+                        cambios,
+                        "comando",
+                        texto,
+                        nodo_id=comando.nodo_id,
+                        usuario_id=comando.usuario_id,
+                        usuario=nombre,
+                    )
+                if por_casa:
+                    await db.commit()
+            for casa_id, cambios in por_casa.items():
                 await self._avisar(casa_id, cambios, ahora, con_estado=False)
 
     # ----------------------------------------------------------- transiciones del detector
@@ -492,6 +528,9 @@ class Procesador:
         for evento, usuario in cambios.eventos:
             datos = evento_a_esquema(evento, usuario).model_dump(mode="json")
             await self.hub.emitir(casa_id, {"tipo": "evento", "data": datos})
+        for comando, usuario in cambios.comandos:
+            datos = comando_a_esquema(comando, usuario).model_dump(mode="json")
+            await self.hub.emitir(casa_id, {"tipo": "comando", "data": datos})
         if con_estado:
             async with self.sesiones() as db:
                 estado = await estado_de_casa(db, casa_id, ahora)

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import aiomqtt
 import httpx
 from alembic import command
 from alembic.config import Config
@@ -14,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models
 from app.config import Settings
 from app.protocolo import EstadoCentral
+from app.services.mqtt_cliente import EstadoMqtt
 
 RAIZ_BACKEND = Path(__file__).resolve().parent.parent
 RAIZ_REPO = RAIZ_BACKEND.parent
@@ -60,6 +62,20 @@ def estado(fixture: str = "estado_normal", **cambios: Any) -> EstadoCentral:
 def en_bytes(datos: dict[str, Any]) -> bytes:
     """Como lo publica la central: JSON en UTF-8."""
     return json.dumps(datos, ensure_ascii=False).encode()
+
+
+class MqttFalso(EstadoMqtt):
+    """Conectado y sin broker: guarda lo que se publicaría."""
+
+    def __init__(self) -> None:
+        super().__init__(conectado=True)
+        self.publicados: list[tuple[str, str]] = []
+        self.falla = False
+
+    async def publicar(self, topico: str, carga: str) -> None:
+        if self.falla:
+            raise aiomqtt.MqttError("se cayó la conexión")
+        self.publicados.append((topico, carga))
 
 
 def migrar(url: str, destino: str = "head", *, bajar: bool = False) -> None:

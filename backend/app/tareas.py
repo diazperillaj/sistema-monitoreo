@@ -4,6 +4,7 @@ import asyncio
 import logging
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from functools import partial
 
 from fastapi import FastAPI
 
@@ -11,6 +12,7 @@ from app.services.mqtt_ingesta import ingesta
 
 log = logging.getLogger(__name__)
 VIGILANTE_CADA_S = 10
+COMANDOS_CADA_S = 2
 
 
 async def repetir(nombre: str, cada_s: float, trabajo: Callable[[], Awaitable[None]]) -> None:
@@ -35,6 +37,17 @@ async def tareas_de_fondo(app: FastAPI) -> AsyncIterator[None]:
                 "vigilante_central", VIGILANTE_CADA_S, estado.procesador.revisar_centrales_caidas
             ),
             name="vigilante_central",
+        ),
+        asyncio.create_task(
+            repetir(
+                "comandos_timeout",
+                COMANDOS_CADA_S,
+                partial(
+                    estado.procesador.vencer_comandos,
+                    estado.settings.timeout_confirmacion_comando_s,
+                ),
+            ),
+            name="comandos_timeout",
         ),
     ]
     try:

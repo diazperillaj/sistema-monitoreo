@@ -34,6 +34,7 @@ DESCRIPCIONES = {
     404: "No encontrado",
     409: "Conflicto",
     429: "Demasiados intentos",
+    503: "Servicio no disponible",
 }
 
 

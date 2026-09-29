@@ -1,6 +1,6 @@
 # Sistema de monitoreo doméstico — Arquitectura del backend
 
-> **Versión:** 1.12 · **Fecha:** 28/09/2026 · **Autor:** Juan Pablo (con Claude)
+> **Versión:** 1.13 · **Fecha:** 29/09/2026 · **Autor:** Juan Pablo (con Claude)
 > **Objetivo del documento:** especificación completa para desarrollar el backend y la app web con Claude Code.
 > **Alcance:** backend, infraestructura y frontend. **El firmware de las ESP32 ya existe y NO se modifica**; solo se le cambian valores de configuración (§12.9).
 >
@@ -22,6 +22,8 @@
 > **Cambios en 1.11 (F1):** códigos de error `clave_incorrecta` y `codigo_en_uso`, rol efectivo del superadmin, `Origin` obligatorio en los métodos no seguros y uvicorn con `--factory`.
 >
 > **Cambios en 1.12 (F2):** campos de `Transicion`, inicio de las alarmas de conexión y textos de los eventos (§6.4); un `estado` en vivo corrige una conexión mal registrada, y un `"0"` retenido cuenta la caída aunque la base no la conociera (§6.3); `EstadoCasa.central` tipado (§8.3); fechas con zona horaria en los filtros (§8.5); WebSocket que acepta y luego cierra con 4401/4403, y revisa la sesión en cada ping (§9); `tzdata` (§3.1); simulador con órdenes por tubería (§13.3).
+>
+> **Cambios en 1.13 (F3):** el comando se guarda y se avisa por WebSocket antes de publicarlo; eventos "Laura silenció Baño" y "La central no confirmó…"; solo un `estado` en vivo y con el nodo conocido confirma; 503 `mqtt_no_disponible` si el backend no tiene conexión con el broker (§6.5, §8.4, §9).
 
 ---
 
@@ -839,7 +841,7 @@ app/                       # cada carpeta lleva su __init__.py
    4. `procesador.aplicar(transiciones)`: persistir, crear eventos, confirmar comandos, notificar.
    5. Importar los eventos nuevos de la central (§6.4) y hacer upsert de `estado_actual`, en la misma transacción.
    6. Actualizar `estado_cache`.
-   7. Después del commit, emitir por WS a los clientes de esa casa, en este orden: `central` (si cambió), `alarma`, `evento` y `estado`.
+   7. Después del commit, emitir por WS a los clientes de esa casa, en este orden: `central` (si cambió), `alarma`, `evento`, `comando` y `estado`.
 
 **Mensajes retenidos.** Al conectarse o reconectarse, el backend recibe de Mosquitto el último `estado` y `online` de cada casa, con la marca `retain`. Si la central está caída, ese `estado` puede tener horas. Se procesa igual (detector, eventos, caché y WS), pero **no** cambia `recibido_en`, no genera lecturas y no marca la casa en línea. Si la central está en línea, en menos de 5 s llega un `estado` en vivo, que sí actualiza `recibido_en`.
 
@@ -921,8 +923,14 @@ Los eventos importados de la central (`origen = "central"`, `tipo = "central"`) 
 2. **Precondiciones** (responder 409 si fallan):
    - la casa está `online`, si no: `central_desconectada`;
    - el nodo está `enLinea`, si no: `nodo_sin_conexion`. No aplica a `todo:silenciar`.
-3. Insertar el comando con `estado = "pendiente"` y publicar el payload con QoS 1.
-4. **Confirmar** cuando un `estado` posterior cumpla el predicado. Al confirmar se guarda `confirmado_en` y se emite por WS `{"tipo":"comando"}`.
+3. Si el backend no tiene conexión con el broker en ese momento, responder 503 `mqtt_no_disponible` sin guardar nada.
+4. **Guardar y avisar antes de publicar:**
+   - se inserta el comando con `estado = "pendiente"`, junto con su evento (`origen = "usuario"`, `tipo = "comando"`): "Laura silenció Baño", "Laura activó Cocina · gas (presencia)" o "Laura silenció todas las alarmas", como la bitácora de la central;
+   - se hace commit y se emite por WS `{"tipo":"comando"}` (pendiente) y `{"tipo":"evento"}`;
+   - recién entonces se publica el payload con QoS 1.
+
+   La central responde en milisegundos: así el procesador ya encuentra el comando para confirmarlo y para atribuirle la alarma que se cierre, y el aviso "pendiente" nunca llega después del "confirmado". Si la publicación falla, el comando se trata como uno que la central no aplicó: vence (punto 6).
+5. **Confirmar** cuando un `estado` posterior **en vivo** cumpla el predicado: un `estado` retenido no prueba que la central aplicó nada. Al confirmar se guarda `resuelto_en` y se emite por WS `{"tipo":"comando"}`.
 
    | Acción | Predicado |
    |---|---|
@@ -931,7 +939,10 @@ Los eventos importados de la central (`origen = "central"`, `tipo = "central"`) 
    | `silenciar` nodo n | `al` del nodo igual a 0 |
    | `todo:silenciar` | `al` igual a 0 en todos los nodos conocidos |
 
-5. Si pasa el timeout (8 s), se marca `estado = "sin_confirmar"` y se emite por WS. La UI muestra "La central no confirmó el cambio".
+   Los predicados de un nodo exigen que sea **conocido** (`visto` y `enLinea`): recién reiniciada, la central lo reporta con `hab` y `al` en 0, y eso no prueba nada.
+6. Si pasa el timeout (8 s; la tarea `comandos_timeout` revisa cada 2 s), se marca `estado = "sin_confirmar"` con `resuelto_en`, se crea el evento "La central no confirmó el comando de Laura: silenciar Baño" y se emite por WS. La UI muestra "La central no confirmó el cambio".
+
+El límite de 30 comandos por minuto y usuario (§12.4) se aplica dentro del servicio: la API, el service worker y el bot de Telegram comparten el mismo contador.
 
 > Nota: en `silenciar`, una alarma de temperatura o gas puede reaparecer si la condición persiste. El comando igual cuenta como confirmado cuando `al` llegó a 0 al menos una vez.
 
@@ -1346,12 +1357,14 @@ No hay registro abierto. El admin genera un enlace y lo comparte (por ejemplo, p
 
 | Método | Ruta | Permiso | Cuerpo | Respuesta |
 |---|---|---|---|---|
-| POST | `/casas/{casa_id}/comandos` | M | `{nodo: 0-4, accion: "activar"\|"desactivar"\|"silenciar", sub: 0\|1}` | 202 `Comando` · 409 |
-| POST | `/casas/{casa_id}/comandos/silenciar-todo` | M | — | 202 `Comando` · 409 |
-| GET | `/casas/{casa_id}/comandos/{id}` | M | — | `Comando` |
-| GET | `/casas/{casa_id}/comandos?limit=20` | M | — | Últimos comandos |
+| POST | `/casas/{casa_id}/comandos` | M | `{nodo: 0-4, accion: "activar"\|"desactivar"\|"silenciar", sub: 0\|1}` (`sub` vale 0 si se omite) | 202 `Comando` · 409 · 503 |
+| POST | `/casas/{casa_id}/comandos/silenciar-todo` | M | — | 202 `Comando` · 409 · 503 |
+| GET | `/casas/{casa_id}/comandos/{id}` | M | — | `Comando` · 404 si no es de esa casa |
+| GET | `/casas/{casa_id}/comandos?limit=20` | M | — | Últimos comandos, del más reciente al más antiguo (`limit` ≤ 100) |
 
-`Comando = {id, nodo_id, accion, sub, estado, creado_en, resuelto_en, usuario:{id, nombre}}`
+`Comando = {id, nodo_id, accion, sub, estado, creado_en, resuelto_en, usuario:{id, nombre}}`. `nodo_id` es `null` en `todo:silenciar`, y `usuario` es `null` si quien lo envió ya no existe.
+
+Errores: 400 `solicitud_invalida` (por ejemplo, `sub = 1` fuera de la presencia del nodo 4) · 409 `central_desconectada` o `nodo_sin_conexion` · 429 `demasiados_intentos` · 503 `mqtt_no_disponible`.
 
 ### 8.5 Alarmas, eventos y lecturas
 
@@ -1451,7 +1464,7 @@ El vínculo **se completa en Telegram**, no con otra llamada a la API (§10.7.3)
 {"tipo": "estado",  "data": EstadoCasa}             // en cada estado recibido (~5 s)
 {"tipo": "central", "online": false, "cambio_en": "..."}
 {"tipo": "alarma",  "evento": "abre" | "cierra", "data": Alarma}
-{"tipo": "comando", "data": Comando}                // pendiente → confirmado / sin_confirmar
+{"tipo": "comando", "data": Comando}                // al crearse (pendiente) y al resolverse (confirmado / sin_confirmar)
 {"tipo": "evento",  "data": Evento}
 {"tipo": "pong"}
 ```
@@ -2093,6 +2106,8 @@ El servidor ya existe con Docker y Caddy, así que solo hay que confirmar:
 
 `sistemamonitoreo.duckdns.org` ya existe y resuelve (verificado el 28/09/2026).
 
+> **Hecho el 29/09/2026:** el nombre ya está en el actualizador de DuckDNS y el bloque de §5.3 en el Caddyfile existente. Resuelve a la misma IP que los otros proyectos y responde por HTTPS con certificado válido.
+
 1. **Agregarlo al actualizador existente.** Es un nombre independiente, así que el actualizador no lo mantiene al día por sí solo.
    - Con la imagen `linuxserver/duckdns`: sumar `sistemamonitoreo` a la variable `SUBDOMAINS`, separado por comas (ej. `SUBDOMAINS=otroproyecto,sistemamonitoreo`), y recrear ese contenedor.
    - Con un script o cron propio: agregarlo en `domains=` de la URL de actualización (`https://www.duckdns.org/update?domains=otroproyecto,sistemamonitoreo&token=...`).
@@ -2155,7 +2170,7 @@ docker compose ps                                  # api y db "healthy", mosquit
 # 5) Conectar con el Caddy existente
 curl -s http://127.0.0.1:8011/api/v1/salud                                      # la app responde en el servidor
 docker exec <contenedor-caddy> wget -qO- http://alarma-api:8011/api/v1/salud    # Caddy ya ve la API
-#   -> agregar al Caddyfile existente el bloque de caddy/alarma.caddy (§5.3), luego:
+#   -> agregar al Caddyfile existente el bloque de caddy/alarma.caddy (§5.3; ya agregado el 29/09/2026), luego:
 docker exec <contenedor-caddy> caddy validate --config /etc/caddy/Caddyfile
 docker exec <contenedor-caddy> caddy reload   --config /etc/caddy/Caddyfile     # no corta los otros sitios
 docker logs -f <contenedor-caddy>                  # esperar "certificate obtained successfully" para sistemamonitoreo…
@@ -2258,7 +2273,7 @@ Confirmadas el 28/09/2026: S1–S9 y P1 por Juan Pablo, y S10–S14 tras contras
 | S12 | Lecturas | Solo de nodos `visto` y `enLinea`: se descartan los valores congelados de un nodo sin conexión y los ceros de uno aún no visto. | §6.2, §7.2 |
 | S13 | Mensajes retenidos | Un `estado` retenido se procesa, pero no cambia `recibido_en` ni genera lecturas. | §6.3 |
 | S14 | Usuario MQTT del backend | **`backend_api`**: el guion bajo impide que una central (`ID_CASA`) tenga el mismo nombre y le cambie la clave por error. | §5.4, §12.6 |
-| P1 | Dominio de la app | **`sistemamonitoreo.duckdns.org`**, en la raíz. Se usa en `DOMINIO`, en el certificado del MQTT y en `MQTT_HOST` del firmware. Debe estar en la lista del actualizador de DuckDNS. | §5.3, §15.2 |
+| P1 | Dominio de la app | **`sistemamonitoreo.duckdns.org`**, en la raíz. Se usa en `DOMINIO`, en el certificado del MQTT y en `MQTT_HOST` del firmware. Ya está en el actualizador de DuckDNS y en el Caddyfile (29/09/2026). | §5.3, §15.2 |
 
 **Pendientes:** ninguno.
 

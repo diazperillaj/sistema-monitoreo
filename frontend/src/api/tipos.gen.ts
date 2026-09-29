@@ -228,6 +228,67 @@ export interface paths {
         patch: operations["cambiar_api_v1_casas__casa_id__ajustes_patch"];
         trace?: never;
     };
+    "/api/v1/casas/{casa_id}/comandos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ultimos
+         * @description Los últimos comandos de la casa, del más reciente al más antiguo.
+         */
+        get: operations["ultimos_api_v1_casas__casa_id__comandos_get"];
+        put?: never;
+        /**
+         * Enviar
+         * @description Silencia, activa o desactiva un nodo. 409 si la central o el nodo no tienen conexión.
+         */
+        post: operations["enviar_api_v1_casas__casa_id__comandos_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/casas/{casa_id}/comandos/silenciar-todo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Silenciar Todo
+         * @description Silencia todos los nodos con alarma. Solo exige que la central esté conectada.
+         */
+        post: operations["silenciar_todo_api_v1_casas__casa_id__comandos_silenciar_todo_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/casas/{casa_id}/comandos/{comando_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ver */
+        get: operations["ver_api_v1_casas__casa_id__comandos__comando_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/casas/{casa_id}/alarmas": {
         parameters: {
             query?: never;
@@ -378,6 +439,50 @@ export interface components {
             codigo: string;
             /** Nombre */
             nombre: string;
+        };
+        /** Comando */
+        Comando: {
+            /** Id */
+            id: number;
+            /** Nodo Id */
+            nodo_id: number | null;
+            /**
+             * Accion
+             * @enum {string}
+             */
+            accion: "activar" | "desactivar" | "silenciar";
+            /** Sub */
+            sub: number;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            estado: "pendiente" | "confirmado" | "sin_confirmar";
+            /**
+             * Creado En
+             * Format: date-time
+             */
+            creado_en: string;
+            /** Resuelto En */
+            resuelto_en: string | null;
+            usuario: components["schemas"]["UsuarioBreve"] | null;
+        };
+        /** ComandoNuevo */
+        ComandoNuevo: {
+            /** Nodo */
+            nodo: number;
+            /**
+             * Accion
+             * @enum {string}
+             */
+            accion: "activar" | "desactivar" | "silenciar";
+            /**
+             * Sub
+             * @description 1 = presencia del nodo 4; solo para activar o desactivar
+             * @default 0
+             * @enum {integer}
+             */
+            sub: 0 | 1;
         };
         /** DetalleError */
         DetalleError: {
@@ -1266,6 +1371,299 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Ajustes"];
+                };
+            };
+            /** @description Solicitud inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Sin permiso u origen inválido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    ultimos_api_v1_casas__casa_id__comandos_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                casa_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Comando"][];
+                };
+            };
+            /** @description Solicitud inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Sin permiso u origen inválido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    enviar_api_v1_casas__casa_id__comandos_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                casa_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ComandoNuevo"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Comando"];
+                };
+            };
+            /** @description Solicitud inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Sin permiso u origen inválido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conflicto */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Demasiados intentos */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Servicio no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    silenciar_todo_api_v1_casas__casa_id__comandos_silenciar_todo_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                casa_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Comando"];
+                };
+            };
+            /** @description Solicitud inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Sin permiso u origen inválido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conflicto */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Demasiados intentos */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Servicio no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    ver_api_v1_casas__casa_id__comandos__comando_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comando_id: number;
+                casa_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Comando"];
                 };
             };
             /** @description Solicitud inválida */

@@ -7,11 +7,11 @@ espera creciente de 1 a 30 s. Cada mensaje se procesa entero antes de leer el si
 import asyncio
 import logging
 import re
-from dataclasses import dataclass
 
 import aiomqtt
 
 from app.config import Settings
+from app.services.mqtt_cliente import EstadoMqtt
 from app.services.procesador import Procesador
 
 log = logging.getLogger(__name__)
@@ -19,14 +19,6 @@ SUSCRIPCIONES = [("casa/+/estado", 1), ("casa/+/online", 1)]
 TOPICO = re.compile(r"casa/([a-z0-9-]{4,40})/(estado|online)")  # ID_CASA según §4.1
 ESPERA_MINIMA_S = 1
 ESPERA_MAXIMA_S = 30
-
-
-@dataclass
-class EstadoMqtt:
-    """La conexión con el broker: la lee /salud y, desde F3, la usan los comandos."""
-
-    conectado: bool = False
-    cliente: aiomqtt.Client | None = None
 
 
 async def despachar(procesador: Procesador, topico: str, carga: bytes, retenido: bool) -> None:

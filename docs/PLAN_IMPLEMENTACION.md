@@ -1,6 +1,6 @@
 # Plan de implementación
 
-> **Base:** [`ARQUITECTURA.md`](ARQUITECTURA.md) v1.12, que sigue siendo la fuente de verdad; las referencias § son de ese documento.
+> **Base:** [`ARQUITECTURA.md`](ARQUITECTURA.md) v1.13, que sigue siendo la fuente de verdad; las referencias § son de ese documento.
 > **Estado:** borrador para revisión · 28/09/2026.
 >
 > **Principio:** primero las bases y después lo que depende de ellas. Cada fase usa solo lo que dejaron listo las anteriores, y se cierra con sus pruebas en verde, su criterio de "hecho" (§14) y un commit.

@@ -44,6 +44,10 @@ TipoAlarma = Literal[
     "CENTRAL_DESCONECTADA",
 ]
 
+# Comandos de casa/<ID>/cmd (§4.5) y el verbo con que los anota ejecutarComando()
+Accion = Literal["activar", "desactivar", "silenciar"]
+VERBOS: dict[str, str] = {"activar": "activó", "desactivar": "desactivó", "silenciar": "silenció"}
+
 # Bit de "al" -> tipo de alarma (§4.4)
 ALARMAS_DE_SENSOR: dict[int, TipoAlarma] = {
     AL_INTRUSION: "INTRUSION",
@@ -113,6 +117,11 @@ class EstadoCentral(BaseModel):
 def parsear_estado(carga: bytes | str) -> EstadoCentral:
     """Valida el JSON de casa/<ID>/estado. Lanza ValueError si no cumple §4.3."""
     return EstadoCentral.model_validate_json(carga)
+
+
+def sub_valido(nodo_id: int | None, accion: str, sub: int) -> bool:
+    """sub = 1 solo existe en el nodo 4 (presencia), para activar o desactivar (§6.5)."""
+    return sub == 0 or (nodo_id == NODO_COCINA_GAS and accion in ("activar", "desactivar"))
 
 
 def nombre_nodo(nodo_id: int | None) -> str:

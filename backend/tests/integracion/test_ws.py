@@ -12,7 +12,7 @@ from httpx_ws.transport import ASGIWebSocketTransport
 
 from app import models
 from app.api.ws import NO_AUTENTICADO, SIN_PERMISO
-from tests.ayudas import ORIGEN, Datos, Entrar, en_bytes, payload
+from tests.ayudas import ORIGEN, Datos, Entrar, MqttFalso, en_bytes, payload
 
 EsperaWs = contextlib.AbstractAsyncContextManager[AsyncWebSocketSession]
 
@@ -181,3 +181,27 @@ async def test_una_peticion_http_a_la_ruta_del_websocket_da_404(
         respuesta = await navegador.get(f"/ws/v1/casas/{casa.id}")
         assert respuesta.status_code == 404
         assert respuesta.json()["detail"]["codigo"] == "no_encontrado"
+
+
+async def test_los_comandos_llegan_pendientes_y_luego_confirmados(
+    app: FastAPI, casa: models.Casa, entrar: Entrar
+) -> None:
+    app.state.mqtt = MqttFalso()
+    await app.state.procesador.recibir_estado("casa-dev", en_bytes(payload()))
+    async with abrir_navegador(app) as navegador:
+        await entrar(navegador, "ana@ejemplo.com")
+        async with conectar(navegador, casa.id) as ws:
+            await ws.receive_json(timeout=5)  # estado inicial
+            r = await navegador.post(
+                f"/api/v1/casas/{casa.id}/comandos", json={"nodo": 2, "accion": "desactivar"}
+            )
+            assert r.status_code == 202
+            assert await ws.receive_json(timeout=5) == {"tipo": "comando", "data": r.json()}
+            evento = await ws.receive_json(timeout=5)
+            assert evento["data"]["texto"] == "Ana desactivó Baño"
+
+            nuevo = payload(n2={"hab": 0})
+            await app.state.procesador.recibir_estado("casa-dev", en_bytes(nuevo))
+            mensajes = await recibir_hasta(ws, "estado")
+            [confirmado] = [m["data"] for m in mensajes if m["tipo"] == "comando"]
+            assert (confirmado["id"], confirmado["estado"]) == (r.json()["id"], "confirmado")
