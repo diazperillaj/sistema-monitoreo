@@ -11,7 +11,7 @@
           "salud"
         ],
         "summary": "Salud",
-        "description": "Responde 503 si falla la base. MQTT (F2) y Telegram (F4b) no marcan la API como caída.",
+        "description": "Responde 503 si falla la base. MQTT y Telegram no marcan la API como caída: sin MQTT\nla API sigue sirviendo el historial y la ingesta reconecta sola.",
         "operationId": "salud_api_v1_salud_get",
         "responses": {
           "200": {
@@ -591,6 +591,79 @@
         }
       }
     },
+    "/api/v1/casas/{casa_id}/estado": {
+      "get": {
+        "tags": [
+          "casas"
+        ],
+        "summary": "Estado",
+        "description": "Lo mismo que envía el WebSocket. El frontend lo consulta cada 5 s si el WS falla (§9).",
+        "operationId": "estado_api_v1_casas__casa_id__estado_get",
+        "parameters": [
+          {
+            "name": "casa_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Casa Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EstadoCasa"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso u origen inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/casas/{casa_id}/ajustes": {
       "get": {
         "tags": [
@@ -743,6 +816,359 @@
           }
         }
       }
+    },
+    "/api/v1/casas/{casa_id}/alarmas": {
+      "get": {
+        "tags": [
+          "alarmas"
+        ],
+        "summary": "Listar",
+        "description": "Paginado por cursor: para la página siguiente se pasa `antes_de_id = siguiente`.",
+        "operationId": "listar_api_v1_casas__casa_id__alarmas_get",
+        "parameters": [
+          {
+            "name": "casa_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Casa Id"
+            }
+          },
+          {
+            "name": "abiertas",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Abiertas"
+            }
+          },
+          {
+            "name": "nodo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 4,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Nodo"
+            }
+          },
+          {
+            "name": "tipo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "INTRUSION",
+                    "SIN_MOVIMIENTO",
+                    "AGUA",
+                    "GAS",
+                    "TEMPERATURA",
+                    "NODO_SIN_CONEXION",
+                    "CENTRAL_DESCONECTADA"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tipo"
+            }
+          },
+          {
+            "name": "desde",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "inicio_en ≥ desde",
+              "title": "Desde"
+            },
+            "description": "inicio_en ≥ desde"
+          },
+          {
+            "name": "hasta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "inicio_en < hasta",
+              "title": "Hasta"
+            },
+            "description": "inicio_en < hasta"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "antes_de_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "el `siguiente` anterior",
+              "title": "Antes De Id"
+            },
+            "description": "el `siguiente` anterior"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginaAlarmas"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso u origen inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/casas/{casa_id}/eventos": {
+      "get": {
+        "tags": [
+          "eventos"
+        ],
+        "summary": "Listar",
+        "description": "Paginado por cursor: para la página siguiente se pasa `antes_de_id = siguiente`.",
+        "operationId": "listar_api_v1_casas__casa_id__eventos_get",
+        "parameters": [
+          {
+            "name": "casa_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Casa Id"
+            }
+          },
+          {
+            "name": "desde",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ocurrido_en ≥ desde",
+              "title": "Desde"
+            },
+            "description": "ocurrido_en ≥ desde"
+          },
+          {
+            "name": "hasta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ocurrido_en < hasta",
+              "title": "Hasta"
+            },
+            "description": "ocurrido_en < hasta"
+          },
+          {
+            "name": "solo_alarmas",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Solo Alarmas"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "antes_de_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "el `siguiente` anterior",
+              "title": "Antes De Id"
+            },
+            "description": "el `siguiente` anterior"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginaEventos"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso u origen inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -785,6 +1211,124 @@
           "avisar_resueltas"
         ],
         "title": "Ajustes"
+      },
+      "Alarma": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "nodo_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nodo Id"
+          },
+          "nodo_nombre": {
+            "type": "string",
+            "title": "Nodo Nombre"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "INTRUSION",
+              "SIN_MOVIMIENTO",
+              "AGUA",
+              "GAS",
+              "TEMPERATURA",
+              "NODO_SIN_CONEXION",
+              "CENTRAL_DESCONECTADA"
+            ],
+            "title": "Tipo"
+          },
+          "texto": {
+            "type": "string",
+            "title": "Texto"
+          },
+          "inicio_en": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Inicio En"
+          },
+          "fin_en": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fin En"
+          },
+          "duracion_s": {
+            "type": "integer",
+            "title": "Duracion S"
+          },
+          "valor": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valor"
+          },
+          "cerrada_por": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "usuario",
+                  "central",
+                  "automatica"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cerrada Por"
+          },
+          "cerrada_por_usuario": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UsuarioBreve"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "avisos_enviados": {
+            "type": "integer",
+            "title": "Avisos Enviados"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nodo_id",
+          "nodo_nombre",
+          "tipo",
+          "texto",
+          "inicio_en",
+          "fin_en",
+          "duracion_s",
+          "valor",
+          "cerrada_por",
+          "cerrada_por_usuario",
+          "avisos_enviados"
+        ],
+        "title": "Alarma"
       },
       "CambioAjustes": {
         "properties": {
@@ -1021,6 +1565,225 @@
         "title": "Error",
         "description": "{\"detail\": {\"codigo\": ..., \"mensaje\": ...}}"
       },
+      "EstadoCasa": {
+        "properties": {
+          "casa_id": {
+            "type": "integer",
+            "title": "Casa Id"
+          },
+          "online": {
+            "type": "boolean",
+            "title": "Online"
+          },
+          "online_cambio_en": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Online Cambio En"
+          },
+          "recibido_en": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recibido En"
+          },
+          "antiguedad_s": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Antiguedad S"
+          },
+          "central": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EstadoCentral"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "alarmas_abiertas": {
+            "items": {
+              "$ref": "#/components/schemas/Alarma"
+            },
+            "type": "array",
+            "title": "Alarmas Abiertas"
+          }
+        },
+        "type": "object",
+        "required": [
+          "casa_id",
+          "online",
+          "online_cambio_en",
+          "recibido_en",
+          "antiguedad_s",
+          "central",
+          "alarmas_abiertas"
+        ],
+        "title": "EstadoCasa"
+      },
+      "EstadoCentral": {
+        "properties": {
+          "hora": {
+            "type": "string",
+            "title": "Hora"
+          },
+          "horaValida": {
+            "type": "boolean",
+            "title": "Horavalida"
+          },
+          "red": {
+            "type": "string",
+            "enum": [
+              "wifi",
+              "ap"
+            ],
+            "title": "Red"
+          },
+          "nodos": {
+            "items": {
+              "$ref": "#/components/schemas/NodoCentral"
+            },
+            "type": "array",
+            "title": "Nodos"
+          },
+          "eventos": {
+            "items": {
+              "$ref": "#/components/schemas/EventoCentral"
+            },
+            "type": "array",
+            "title": "Eventos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "hora",
+          "horaValida",
+          "red",
+          "nodos",
+          "eventos"
+        ],
+        "title": "EstadoCentral",
+        "description": "El payload de casa/<ID>/estado (§4.3)."
+      },
+      "Evento": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "ocurrido_en": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ocurrido En"
+          },
+          "origen": {
+            "type": "string",
+            "enum": [
+              "central",
+              "backend",
+              "usuario"
+            ],
+            "title": "Origen"
+          },
+          "usuario": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UsuarioBreve"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nodo_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nodo Id"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "alarma",
+              "alarma_resuelta",
+              "comando",
+              "habilitado",
+              "conexion",
+              "central",
+              "info"
+            ],
+            "title": "Tipo"
+          },
+          "texto": {
+            "type": "string",
+            "title": "Texto"
+          },
+          "es_alarma": {
+            "type": "boolean",
+            "title": "Es Alarma"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "ocurrido_en",
+          "origen",
+          "usuario",
+          "nodo_id",
+          "tipo",
+          "texto",
+          "es_alarma"
+        ],
+        "title": "Evento"
+      },
+      "EventoCentral": {
+        "properties": {
+          "t": {
+            "type": "string",
+            "title": "T"
+          },
+          "x": {
+            "type": "string",
+            "title": "X"
+          },
+          "a": {
+            "type": "boolean",
+            "title": "A"
+          }
+        },
+        "type": "object",
+        "required": [
+          "t",
+          "x",
+          "a"
+        ],
+        "title": "EventoCentral",
+        "description": "Una entrada de la bitácora de la central. No tiene id (§4.3)."
+      },
       "Login": {
         "properties": {
           "email": {
@@ -1041,6 +1804,151 @@
           "clave"
         ],
         "title": "Login"
+      },
+      "NodoCentral": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "maximum": 4.0,
+            "minimum": 0.0,
+            "title": "Id"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "visto": {
+            "type": "boolean",
+            "title": "Visto"
+          },
+          "enLinea": {
+            "type": "boolean",
+            "title": "Enlinea"
+          },
+          "hab": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Hab"
+          },
+          "al": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Al"
+          },
+          "mov": {
+            "type": "integer",
+            "title": "Mov"
+          },
+          "fl": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Fl"
+          },
+          "c1": {
+            "type": "integer",
+            "title": "C1"
+          },
+          "l1": {
+            "type": "integer",
+            "title": "L1"
+          },
+          "c2": {
+            "type": "integer",
+            "title": "C2"
+          },
+          "l2": {
+            "type": "integer",
+            "title": "L2"
+          },
+          "v1": {
+            "type": "number",
+            "title": "V1"
+          },
+          "v2": {
+            "type": "number",
+            "title": "V2"
+          },
+          "hace": {
+            "type": "integer",
+            "title": "Hace"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nombre",
+          "visto",
+          "enLinea",
+          "hab",
+          "al",
+          "mov",
+          "fl",
+          "c1",
+          "l1",
+          "c2",
+          "l2",
+          "v1",
+          "v2",
+          "hace"
+        ],
+        "title": "NodoCentral",
+        "description": "Un nodo del payload de estado (§4.3). Los nombres del JSON se conservan en la API."
+      },
+      "PaginaAlarmas": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Alarma"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "siguiente": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Siguiente"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "siguiente"
+        ],
+        "title": "PaginaAlarmas"
+      },
+      "PaginaEventos": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Evento"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "siguiente": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Siguiente"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "siguiente"
+        ],
+        "title": "PaginaEventos"
       },
       "ResumenCasa": {
         "properties": {
@@ -1217,6 +2125,25 @@
           "es_superadmin"
         ],
         "title": "Usuario"
+      },
+      "UsuarioBreve": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nombre"
+        ],
+        "title": "UsuarioBreve",
+        "description": "Quién hizo algo: silenció una alarma, envió un comando…"
       },
       "Yo": {
         "properties": {

@@ -30,14 +30,15 @@ async def base_responde(motor: AsyncEngine) -> bool:
     responses={503: {"model": Salud, "description": "La base de datos no responde"}},
 )
 async def salud(request: Request, response: Response) -> Salud:
-    """Responde 503 si falla la base. MQTT (F2) y Telegram (F4b) no marcan la API como caída."""
+    """Responde 503 si falla la base. MQTT y Telegram no marcan la API como caída: sin MQTT
+    la API sigue sirviendo el historial y la ingesta reconecta sola."""
     db = "ok" if await base_responde(request.app.state.motor) else "error"
     if db == "error":
         response.status_code = 503
     return Salud(
         ok=db == "ok",
         db=db,
-        mqtt="conectado" if getattr(request.app.state, "mqtt_conectado", False) else "desconectado",
+        mqtt="conectado" if request.app.state.mqtt.conectado else "desconectado",
         telegram="desactivado",
         version=__version__,
     )

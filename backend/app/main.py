@@ -10,20 +10,25 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 
 from app import __version__
-from app.api import ajustes, auth, casas, salud
+from app.api import ajustes, alarmas, auth, casas, eventos, salud, ws
 from app.config import Settings, obtener_settings
 from app.db import crear_fabrica, crear_motor
 from app.logs import configurar_logs
 from app.seguridad import Limites, SeguridadApi
+from app.services.estado_cache import EstadoCache
+from app.services.mqtt_ingesta import EstadoMqtt
+from app.services.procesador import Procesador
+from app.services.ws_hub import HubWs
+from app.tareas import tareas_de_fondo
 from app.web import CabecerasSeguridad, montar_frontend
 
-ROUTERS = (salud.router, auth.router, casas.router, ajustes.router)
+ROUTERS = (salud.router, auth.router, casas.router, ajustes.router, alarmas.router, eventos.router)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    # Desde F2 aquí arrancan y se detienen las tareas de fondo (app/tareas.py, §6.2).
-    yield
+    async with tareas_de_fondo(app):  # ingesta MQTT y vigilante de centrales (§6.2)
+        yield
     await app.state.motor.dispose()
 
 
@@ -86,10 +91,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.motor = crear_motor(settings.database_url)
     app.state.sesiones = crear_fabrica(app.state.motor)
     app.state.limites = Limites()
+    # Viven en memoria del proceso: por eso un solo worker (§6.6)
+    app.state.hub = HubWs()
+    app.state.mqtt = EstadoMqtt()
+    app.state.procesador = Procesador(app.state.sesiones, app.state.hub, EstadoCache())
     app.add_exception_handler(RequestValidationError, solicitud_invalida)
-    # Primero la API; después el frontend y su respaldo SPA (§6.7)
+    # Primero la API y el WebSocket; después el frontend y su respaldo SPA (§6.7)
     for router in ROUTERS:
         app.include_router(router, prefix="/api/v1")
+    app.include_router(ws.router)
     montar_frontend(app, settings.directorio_frontend)
     app.add_middleware(SeguridadApi, settings=settings, limites=app.state.limites)
     # El último middleware queda por fuera: sus cabeceras cubren también los 403 y 429

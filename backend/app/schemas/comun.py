@@ -8,6 +8,13 @@ from pydantic import BaseModel
 Rol = Literal["admin", "cuidador"]
 
 
+class UsuarioBreve(BaseModel):
+    """Quién hizo algo: silenció una alarma, envió un comando…"""
+
+    id: int
+    nombre: str
+
+
 class DetalleError(BaseModel):
     codigo: str
     mensaje: str

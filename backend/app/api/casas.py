@@ -1,4 +1,4 @@
-"""Casas (§8.3). El estado en vivo (GET /casas/{id}/estado) llega en F2."""
+"""Casas y su estado en vivo (§8.3)."""
 
 from fastapi import APIRouter, Request
 from sqlalchemy import func, select
@@ -9,7 +9,16 @@ from app.config import Settings
 from app.db import Db
 from app.schemas.casas import Ajustes, CambioCasa, Casa, CasaNueva, ResumenCasa
 from app.schemas.comun import error_api, respuestas_error
-from app.services.auth import AccesoAdmin, AccesoMiembro, Actual, Superadmin, casas_visibles
+from app.schemas.estado import EstadoCasa
+from app.services.auth import (
+    AccesoAdmin,
+    AccesoMiembro,
+    Actual,
+    Superadmin,
+    ahora,
+    casas_visibles,
+)
+from app.services.estado_cache import estado_de_casa
 
 router = APIRouter(prefix="/casas", tags=["casas"])
 
@@ -102,3 +111,11 @@ async def cambiar(datos: CambioCasa, acceso: AccesoAdmin, db: Db) -> Casa:
         casa.nombre = datos.nombre
     await db.commit()
     return a_esquema(casa)
+
+
+@router.get(
+    "/{casa_id}/estado", response_model=EstadoCasa, responses=respuestas_error(401, 403, 404)
+)
+async def estado(acceso: AccesoMiembro, db: Db) -> EstadoCasa:
+    """Lo mismo que envía el WebSocket. El frontend lo consulta cada 5 s si el WS falla (§9)."""
+    return await estado_de_casa(db, acceso.casa_id, ahora())

@@ -15,7 +15,14 @@ Con TLS, como una central real (en desarrollo el certificado es para "localhost"
 
     uv run python ../tools/simulador_central.py --casa casa-dev --clave <clave> --puerto 8883 --tls --ca ../mosquitto/certs/ca.crt
 
-Escribe "ayuda" para ver el menú.
+Escribe "ayuda" para ver el menú. Las órdenes también pueden llegar por una tubería, una por
+línea, para guionar un escenario ("w <s>" espera). Al acabarse, la central sigue publicando:
+
+    printf 'w 8
+a 2
+w 10
+s 2
+' | uv run python ../tools/simulador_central.py --casa casa-dev
 """
 
 from __future__ import annotations
@@ -96,6 +103,7 @@ Comandos:
   r                reinicia la central (bitácora nueva y nodos sin ver unos segundos)
   c                corta la conexión sin DISCONNECT (el broker publica el LWT); otra vez: reconecta
   e                muestra el estado que se publica
+  w <segundos>     espera (para guiones que llegan por una tubería)
   q                sale como un corte de luz (el broker publica el LWT)"""
 
 
@@ -618,6 +626,13 @@ class Central:
                 )
             else:
                 self.conectar()
+        elif orden in ("w", "espera"):
+            try:
+                segundos = float(resto[0]) if resto else 1.0
+            except ValueError:
+                print("Uso: w <segundos>")
+            else:
+                self.detener.wait(segundos)
         elif orden == "e":
             with self.lock:
                 print(json.dumps(json.loads(self.json_estado(ahora)), ensure_ascii=False, indent=2))
@@ -658,16 +673,25 @@ class Central:
                 nodo.normalizar()
 
     def menu(self) -> None:
-        if not sys.stdin.isatty():
-            print("Sin terminal: el simulador corre sin menú hasta que lo detengan.")
-            self.detener.wait()
-            return
-        print(AYUDA)
+        """Órdenes desde el teclado o, sin terminal, desde una tubería (una por línea)."""
+        interactivo = sys.stdin.isatty()
+        if interactivo:
+            print(AYUDA)
         while True:
-            try:
-                linea = input("> ")
-            except EOFError:
-                return
+            if interactivo:
+                try:
+                    linea = input("> ")
+                except EOFError:
+                    return
+            else:
+                linea = sys.stdin.readline()
+                if not linea:
+                    print("Sin más órdenes: la central sigue publicando hasta que la detengan.")
+                    while not self.detener.wait(0.5):  # con pausas: Ctrl+C la detiene
+                        pass
+                    return
+                if linea.strip():
+                    print(f"> {linea.strip()}")
             if not self.orden(linea):
                 return
 

@@ -42,6 +42,10 @@ cd frontend && npm install && npm run dev                                     # 
 cd backend && uv run python ../tools/simulador_central.py --casa casa-dev --clave "<CLAVE_CENTRAL>"
 ```
 
+Con el simulador conectado, el estado en vivo, las alarmas y los eventos se consultan en
+http://localhost:8011/api/v1/docs (`GET /casas/{id}/estado`, `/alarmas` y `/eventos`), y llegan
+al instante por el WebSocket `/ws/v1/casas/{id}`.
+
 **Pruebas y calidad:**
 
 ```bash

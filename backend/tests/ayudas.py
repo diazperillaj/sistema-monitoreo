@@ -1,5 +1,6 @@
 """Constantes y utilidades compartidas por las pruebas."""
 
+import json
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -12,9 +13,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models
 from app.config import Settings
+from app.protocolo import EstadoCentral
 
 RAIZ_BACKEND = Path(__file__).resolve().parent.parent
 RAIZ_REPO = RAIZ_BACKEND.parent
+FIXTURES = RAIZ_BACKEND / "tests" / "fixtures"
 ORIGEN = "https://alarma.test"
 CLAVE = "clave-de-prueba-123"
 URL_SIN_BASE = "postgresql+asyncpg://nadie@127.0.0.1:9/ninguna"  # nunca responde: pruebas sin base
@@ -33,6 +36,30 @@ def ajustes(**cambios: Any) -> Settings:
         "directorio_frontend": RAIZ_BACKEND / "sin-build",
     }
     return Settings(**(valores | cambios))
+
+
+def payload(
+    fixture: str = "estado_normal",
+    *,
+    eventos: list[dict[str, Any]] | None = None,
+    **nodos: dict[str, Any],
+) -> dict[str, Any]:
+    """Un estado de la central (§4.3) de tests/fixtures, con cambios por nodo: n2={"al": 1}."""
+    datos = json.loads((FIXTURES / f"{fixture}.json").read_text(encoding="utf-8"))
+    for clave, cambios in nodos.items():
+        datos["nodos"][int(clave.removeprefix("n"))].update(cambios)
+    if eventos is not None:
+        datos["eventos"] = eventos
+    return datos
+
+
+def estado(fixture: str = "estado_normal", **cambios: Any) -> EstadoCentral:
+    return EstadoCentral.model_validate(payload(fixture, **cambios))
+
+
+def en_bytes(datos: dict[str, Any]) -> bytes:
+    """Como lo publica la central: JSON en UTF-8."""
+    return json.dumps(datos, ensure_ascii=False).encode()
 
 
 def migrar(url: str, destino: str = "head", *, bajar: bool = False) -> None:

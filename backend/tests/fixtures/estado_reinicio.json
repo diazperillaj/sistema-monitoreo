@@ -1,0 +1,15 @@
+{
+  "hora": "+6s",
+  "horaValida": false,
+  "red": "wifi",
+  "nodos": [
+    {"id":0,"nombre":"Puerta de entrada","visto":true,"enLinea":true,"hab":1,"al":0,"mov":0,"fl":16,"c1":0,"l1":0,"c2":0,"l2":0,"v1":0.00,"v2":0,"hace":0},
+    {"id":1,"nombre":"Habitación","visto":false,"enLinea":false,"hab":0,"al":0,"mov":0,"fl":0,"c1":0,"l1":0,"c2":0,"l2":0,"v1":0.00,"v2":0,"hace":0},
+    {"id":2,"nombre":"Baño","visto":false,"enLinea":false,"hab":0,"al":0,"mov":0,"fl":0,"c1":0,"l1":0,"c2":0,"l2":0,"v1":0.00,"v2":0,"hace":0},
+    {"id":3,"nombre":"Cocina · agua","visto":false,"enLinea":false,"hab":0,"al":0,"mov":0,"fl":0,"c1":0,"l1":0,"c2":0,"l2":0,"v1":0.00,"v2":0,"hace":0},
+    {"id":4,"nombre":"Cocina · gas","visto":false,"enLinea":false,"hab":0,"al":0,"mov":0,"fl":0,"c1":0,"l1":0,"c2":0,"l2":0,"v1":0.00,"v2":0,"hace":0}
+  ],
+  "eventos": [
+    {"t":"+4s","x":"Central iniciada","a":false}
+  ]
+}

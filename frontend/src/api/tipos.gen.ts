@@ -13,7 +13,8 @@ export interface paths {
         };
         /**
          * Salud
-         * @description Responde 503 si falla la base. MQTT (F2) y Telegram (F4b) no marcan la API como caída.
+         * @description Responde 503 si falla la base. MQTT y Telegram no marcan la API como caída: sin MQTT
+         *     la API sigue sirviendo el historial y la ingesta reconecta sola.
          */
         get: operations["salud_api_v1_salud_get"];
         put?: never;
@@ -186,6 +187,26 @@ export interface paths {
         patch: operations["cambiar_api_v1_casas__casa_id__patch"];
         trace?: never;
     };
+    "/api/v1/casas/{casa_id}/estado": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Estado
+         * @description Lo mismo que envía el WebSocket. El frontend lo consulta cada 5 s si el WS falla (§9).
+         */
+        get: operations["estado_api_v1_casas__casa_id__estado_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/casas/{casa_id}/ajustes": {
         parameters: {
             query?: never;
@@ -207,6 +228,46 @@ export interface paths {
         patch: operations["cambiar_api_v1_casas__casa_id__ajustes_patch"];
         trace?: never;
     };
+    "/api/v1/casas/{casa_id}/alarmas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar
+         * @description Paginado por cursor: para la página siguiente se pasa `antes_de_id = siguiente`.
+         */
+        get: operations["listar_api_v1_casas__casa_id__alarmas_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/casas/{casa_id}/eventos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar
+         * @description Paginado por cursor: para la página siguiente se pasa `antes_de_id = siguiente`.
+         */
+        get: operations["listar_api_v1_casas__casa_id__eventos_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -223,6 +284,38 @@ export interface components {
             avisar_nodo_sin_conexion: boolean;
             /** Avisar Resueltas */
             avisar_resueltas: boolean;
+        };
+        /** Alarma */
+        Alarma: {
+            /** Id */
+            id: number;
+            /** Nodo Id */
+            nodo_id: number | null;
+            /** Nodo Nombre */
+            nodo_nombre: string;
+            /**
+             * Tipo
+             * @enum {string}
+             */
+            tipo: "INTRUSION" | "SIN_MOVIMIENTO" | "AGUA" | "GAS" | "TEMPERATURA" | "NODO_SIN_CONEXION" | "CENTRAL_DESCONECTADA";
+            /** Texto */
+            texto: string;
+            /**
+             * Inicio En
+             * Format: date-time
+             */
+            inicio_en: string;
+            /** Fin En */
+            fin_en: string | null;
+            /** Duracion S */
+            duracion_s: number;
+            /** Valor */
+            valor: number | null;
+            /** Cerrada Por */
+            cerrada_por: ("usuario" | "central" | "automatica") | null;
+            cerrada_por_usuario: components["schemas"]["UsuarioBreve"] | null;
+            /** Avisos Enviados */
+            avisos_enviados: number;
         };
         /**
          * CambioAjustes
@@ -302,6 +395,80 @@ export interface components {
         Error: {
             detail: components["schemas"]["DetalleError"];
         };
+        /** EstadoCasa */
+        EstadoCasa: {
+            /** Casa Id */
+            casa_id: number;
+            /** Online */
+            online: boolean;
+            /** Online Cambio En */
+            online_cambio_en: string | null;
+            /** Recibido En */
+            recibido_en: string | null;
+            /** Antiguedad S */
+            antiguedad_s: number | null;
+            central: components["schemas"]["EstadoCentral"] | null;
+            /** Alarmas Abiertas */
+            alarmas_abiertas: components["schemas"]["Alarma"][];
+        };
+        /**
+         * EstadoCentral
+         * @description El payload de casa/<ID>/estado (§4.3).
+         */
+        EstadoCentral: {
+            /** Hora */
+            hora: string;
+            /** Horavalida */
+            horaValida: boolean;
+            /**
+             * Red
+             * @enum {string}
+             */
+            red: "wifi" | "ap";
+            /** Nodos */
+            nodos: components["schemas"]["NodoCentral"][];
+            /** Eventos */
+            eventos: components["schemas"]["EventoCentral"][];
+        };
+        /** Evento */
+        Evento: {
+            /** Id */
+            id: number;
+            /**
+             * Ocurrido En
+             * Format: date-time
+             */
+            ocurrido_en: string;
+            /**
+             * Origen
+             * @enum {string}
+             */
+            origen: "central" | "backend" | "usuario";
+            usuario: components["schemas"]["UsuarioBreve"] | null;
+            /** Nodo Id */
+            nodo_id: number | null;
+            /**
+             * Tipo
+             * @enum {string}
+             */
+            tipo: "alarma" | "alarma_resuelta" | "comando" | "habilitado" | "conexion" | "central" | "info";
+            /** Texto */
+            texto: string;
+            /** Es Alarma */
+            es_alarma: boolean;
+        };
+        /**
+         * EventoCentral
+         * @description Una entrada de la bitácora de la central. No tiene id (§4.3).
+         */
+        EventoCentral: {
+            /** T */
+            t: string;
+            /** X */
+            x: string;
+            /** A */
+            a: boolean;
+        };
         /** Login */
         Login: {
             /**
@@ -311,6 +478,56 @@ export interface components {
             email: string;
             /** Clave */
             clave: string;
+        };
+        /**
+         * NodoCentral
+         * @description Un nodo del payload de estado (§4.3). Los nombres del JSON se conservan en la API.
+         */
+        NodoCentral: {
+            /** Id */
+            id: number;
+            /** Nombre */
+            nombre: string;
+            /** Visto */
+            visto: boolean;
+            /** Enlinea */
+            enLinea: boolean;
+            /** Hab */
+            hab: number;
+            /** Al */
+            al: number;
+            /** Mov */
+            mov: number;
+            /** Fl */
+            fl: number;
+            /** C1 */
+            c1: number;
+            /** L1 */
+            l1: number;
+            /** C2 */
+            c2: number;
+            /** L2 */
+            l2: number;
+            /** V1 */
+            v1: number;
+            /** V2 */
+            v2: number;
+            /** Hace */
+            hace: number;
+        };
+        /** PaginaAlarmas */
+        PaginaAlarmas: {
+            /** Items */
+            items: components["schemas"]["Alarma"][];
+            /** Siguiente */
+            siguiente: number | null;
+        };
+        /** PaginaEventos */
+        PaginaEventos: {
+            /** Items */
+            items: components["schemas"]["Evento"][];
+            /** Siguiente */
+            siguiente: number | null;
         };
         /** ResumenCasa */
         ResumenCasa: {
@@ -388,6 +605,16 @@ export interface components {
             nombre: string;
             /** Es Superadmin */
             es_superadmin: boolean;
+        };
+        /**
+         * UsuarioBreve
+         * @description Quién hizo algo: silenció una alarma, envió un comando…
+         */
+        UsuarioBreve: {
+            /** Id */
+            id: number;
+            /** Nombre */
+            nombre: string;
         };
         /** Yo */
         Yo: {
@@ -901,6 +1128,64 @@ export interface operations {
             };
         };
     };
+    estado_api_v1_casas__casa_id__estado_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                casa_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EstadoCasa"];
+                };
+            };
+            /** @description Solicitud inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Sin permiso u origen inválido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     ver_api_v1_casas__casa_id__ajustes_get: {
         parameters: {
             query?: never;
@@ -981,6 +1266,142 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Ajustes"];
+                };
+            };
+            /** @description Solicitud inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Sin permiso u origen inválido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listar_api_v1_casas__casa_id__alarmas_get: {
+        parameters: {
+            query?: {
+                abiertas?: boolean | null;
+                nodo?: number | null;
+                tipo?: ("INTRUSION" | "SIN_MOVIMIENTO" | "AGUA" | "GAS" | "TEMPERATURA" | "NODO_SIN_CONEXION" | "CENTRAL_DESCONECTADA") | null;
+                /** @description inicio_en ≥ desde */
+                desde?: string | null;
+                /** @description inicio_en < hasta */
+                hasta?: string | null;
+                limit?: number;
+                /** @description el `siguiente` anterior */
+                antes_de_id?: number | null;
+            };
+            header?: never;
+            path: {
+                casa_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginaAlarmas"];
+                };
+            };
+            /** @description Solicitud inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Sin permiso u origen inválido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listar_api_v1_casas__casa_id__eventos_get: {
+        parameters: {
+            query?: {
+                /** @description ocurrido_en ≥ desde */
+                desde?: string | null;
+                /** @description ocurrido_en < hasta */
+                hasta?: string | null;
+                solo_alarmas?: boolean;
+                limit?: number;
+                /** @description el `siguiente` anterior */
+                antes_de_id?: number | null;
+            };
+            header?: never;
+            path: {
+                casa_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginaEventos"];
                 };
             };
             /** @description Solicitud inválida */

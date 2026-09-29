@@ -1,6 +1,6 @@
 # Sistema de monitoreo doméstico — Arquitectura del backend
 
-> **Versión:** 1.11 · **Fecha:** 28/09/2026 · **Autor:** Juan Pablo (con Claude)
+> **Versión:** 1.12 · **Fecha:** 28/09/2026 · **Autor:** Juan Pablo (con Claude)
 > **Objetivo del documento:** especificación completa para desarrollar el backend y la app web con Claude Code.
 > **Alcance:** backend, infraestructura y frontend. **El firmware de las ESP32 ya existe y NO se modifica**; solo se le cambian valores de configuración (§12.9).
 >
@@ -20,6 +20,8 @@
 > **Cambios en 1.10 (F0):** Mosquitto 2.1 con la configuración montada en solo lectura, dependencias de Python fijadas con `uv.lock`, CSP propia para `/api/v1/docs`, puerto de PostgreSQL configurable en desarrollo y simulador con `paho-mqtt`.
 >
 > **Cambios en 1.11 (F1):** códigos de error `clave_incorrecta` y `codigo_en_uso`, rol efectivo del superadmin, `Origin` obligatorio en los métodos no seguros y uvicorn con `--factory`.
+>
+> **Cambios en 1.12 (F2):** campos de `Transicion`, inicio de las alarmas de conexión y textos de los eventos (§6.4); un `estado` en vivo corrige una conexión mal registrada, y un `"0"` retenido cuenta la caída aunque la base no la conociera (§6.3); `EstadoCasa.central` tipado (§8.3); fechas con zona horaria en los filtros (§8.5); WebSocket que acepta y luego cierra con 4401/4403, y revisa la sesión en cada ping (§9); `tzdata` (§3.1); simulador con órdenes por tubería (§13.3).
 
 ---
 
@@ -218,7 +220,8 @@ sequenceDiagram
 | Web Push | `pywebpush` (incluye `py-vapid`) | 2.0 | Síncrono → se ejecuta en threadpool |
 | Telegram | `httpx` (cliente async de la Bot API, sin librería de bots) | 0.27 | Opcional: solo si `TELEGRAM_BOT_TOKEN` está definido (§10.7) |
 | Hash de claves | `pwdlib[argon2]` | 0.2 | Argon2id |
-| Pruebas | `pytest`, `pytest-asyncio`, `httpx`, `respx`, `testcontainers[postgres]` | | PostgreSQL real y efímero; `respx` simula la Bot API de Telegram |
+| Zonas horarias | `tzdata` | 2024.1 | La imagen `python:3.12-slim` no trae la base de zonas, y los textos usan `America/Bogota` |
+| Pruebas | `pytest`, `pytest-asyncio`, `httpx`, `httpx-ws`, `respx`, `testcontainers[postgres]` | | PostgreSQL real y efímero; `httpx-ws` prueba el WebSocket sin servidor; `respx` simula la Bot API de Telegram |
 | Calidad | `ruff` (lint + formato), `mypy` (opcional) | | |
 | Dependencias | `pyproject.toml` + `uv.lock` (versiones exactas); instalación con `uv` en el Dockerfile | | Las de pruebas y calidad van en un grupo `dev` y no entran en la imagen. Ruff se configura en `ruff.toml` (raíz) para `backend/` y `tools/` |
 
@@ -823,21 +826,24 @@ app/                       # cada carpeta lleva su __init__.py
 ### 6.3 Procesamiento de un mensaje MQTT
 
 1. **`casa/<codigo>/online`**:
-   - Buscar la casa por `codigo`. Si no existe, se registra un aviso en el log y se ignora.
-   - Si el valor cambió respecto a la BD:
+   - Buscar la casa por `codigo`. Si no existe, se registra un aviso en el log (una vez por código) y se ignora. Un valor distinto de `"0"` o `"1"` también se ignora.
+   - Si el valor cambió respecto a la BD, o la BD aún no conocía la conexión (`online_cambio_en` nulo: la fila la creó un `estado` retenido):
      - actualizar `estado_actual.online`, `online_cambio_en`;
-     - crear un evento;
-     - si pasó a `"1"` y había una `CENTRAL_DESCONECTADA` abierta, cerrarla (`cerrada_por = "automatica"`) y notificar "✅ Central en línea" (§10.1). Si la caída duró menos que `minutos_central_caida`, esa alarma no llegó a abrirse y no se notifica nada;
+     - crear un evento ("La central se conectó", "La central se desconectó");
+     - si pasó a `"1"` y había una `CENTRAL_DESCONECTADA` abierta, cerrarla (`cerrada_por = "automatica"`, evento "La central volvió a conectarse") y notificar "✅ Central en línea" (§10.1). Si la caída duró menos que `minutos_central_caida`, esa alarma no llegó a abrirse y no se notifica nada;
      - emitir `{"tipo":"central"}` por WS.
 2. **`casa/<codigo>/estado`**:
    1. Parsear el JSON y validarlo con Pydantic (`EstadoCentral`). Si no es válido, se registra en el log y se descarta.
-   2. `transiciones = detector.detectar(previo, nuevo, alarmas_abiertas)`.
-   3. `procesador.aplicar(transiciones)`: persistir, crear eventos, confirmar comandos, notificar.
-   4. Importar los eventos nuevos de la central (§6.4) y hacer upsert de `estado_actual`, en la misma transacción.
-   5. Actualizar `estado_cache`.
-   6. Broadcast WS `{"tipo":"estado"}` a los clientes de esa casa.
+   2. Si es un `estado` **en vivo** y la BD tiene la casa offline, se aplica como un `"1"` (punto 1). Solo una central conectada publica en vivo, así que un `"1"` perdido o que llegó después del LWT no deja la casa como desconectada.
+   3. `transiciones = detector.detectar(previo, nuevo, alarmas_abiertas)`.
+   4. `procesador.aplicar(transiciones)`: persistir, crear eventos, confirmar comandos, notificar.
+   5. Importar los eventos nuevos de la central (§6.4) y hacer upsert de `estado_actual`, en la misma transacción.
+   6. Actualizar `estado_cache`.
+   7. Después del commit, emitir por WS a los clientes de esa casa, en este orden: `central` (si cambió), `alarma`, `evento` y `estado`.
 
-**Mensajes retenidos.** Al conectarse o reconectarse, el backend recibe de Mosquitto el último `estado` y `online` de cada casa, con la marca `retain`. Si la central está caída, ese `estado` puede tener horas. Se procesa igual (detector, eventos, caché y WS), pero **no** cambia `recibido_en` ni genera lecturas. Si la central está en línea, en menos de 5 s llega un `estado` en vivo, que sí actualiza `recibido_en`.
+**Mensajes retenidos.** Al conectarse o reconectarse, el backend recibe de Mosquitto el último `estado` y `online` de cada casa, con la marca `retain`. Si la central está caída, ese `estado` puede tener horas. Se procesa igual (detector, eventos, caché y WS), pero **no** cambia `recibido_en`, no genera lecturas y no marca la casa en línea. Si la central está en línea, en menos de 5 s llega un `estado` en vivo, que sí actualiza `recibido_en`.
+
+**Un mensaje a la vez.** La ingesta procesa cada mensaje completo antes de leer el siguiente, y el `vigilante_central` espera su turno (un candado en memoria, posible por el worker único, §6.6). Así un `"1"` no se cruza con el vigilante que está abriendo `CENTRAL_DESCONECTADA`. Un error al procesar un mensaje se registra y no detiene la ingesta.
 
 ### 6.4 Detector de transiciones (`services/detector.py`)
 
@@ -850,12 +856,15 @@ class Transicion:
     nodo_id: int
     tipo_alarma: TipoAlarma | None = None
     valor: float | None = None         # ej. temperatura al abrir TEMPERATURA
+    limite_s: int | None = None        # l1, o l2 en la presencia del nodo 4, al abrir
     hab_previo: int | None = None
     hab_nuevo: int | None = None
+    por_horario: bool = False          # nodo 1: hab cambió junto con FL_HORARIO_NOCTURNO
+    hace_s: int = 0                    # nodo_offline: segundos sin datos del nodo
 
 def detectar(previo: EstadoCentral | None,
              nuevo: EstadoCentral,
-             abiertas: set[tuple[int, TipoAlarma]]) -> list[Transicion]: ...
+             abiertas: set[tuple[int | None, str]]) -> list[Transicion]: ...
 ```
 
 Reglas:
@@ -877,6 +886,21 @@ Reglas:
 - Si existe: `cerrada_por = "usuario"` y `cerrada_por_usuario_id = comando.usuario_id`.
 - Si no: `cerrada_por = "central"` (botón BOOT, app local o fin natural, como cerrar la llave del agua).
 - `NODO_SIN_CONEXION` y `CENTRAL_DESCONECTADA` se cierran solas cuando vuelve la conexión: `cerrada_por = "automatica"`.
+
+**Cuándo empieza cada alarma (`inicio_en`):** las de sensor, al recibir el `estado` que las trae. `NODO_SIN_CONEXION`, cuando el nodo dejó de reportar (`ahora - hace`). `CENTRAL_DESCONECTADA`, cuando se cayó la central (`online_cambio_en`), no cuando la abre el vigilante: así su duración es la de la caída.
+
+**Textos de los eventos** que genera el backend (`origen = "backend"`):
+
+| Momento | `tipo` | `es_alarma` | Texto |
+|---|---|---|---|
+| Se abre una alarma de sensor | `alarma` | sí | "Baño: Sin movimiento por 10 min" (nodo y texto de §4.4) |
+| Se cierra una alarma de sensor | `alarma_resuelta` | no | "Baño: Sin movimiento por 10 min · silenciada por Laura" · "… · desactivada por Laura" · "… · se normalizó" (sin comando reciente) |
+| Un nodo pierde o recupera la conexión | `conexion` | sí / no | "Cocina · agua perdió la conexión" · "Cocina · agua volvió a conectarse" |
+| La central se conecta o se cae | `central` | no | "La central se conectó" · "La central se desconectó" · "La central volvió a conectarse" (si cerró `CENTRAL_DESCONECTADA`) |
+| El vigilante abre `CENTRAL_DESCONECTADA` | `alarma` | sí | "Central desconectada desde las 14:06" (hora de Colombia) |
+| La habitación cambia por horario | `habilitado` | no | "Habitación desactivada (horario)" · "Habitación activada (horario)" |
+
+Los eventos importados de la central (`origen = "central"`, `tipo = "central"`) conservan su texto y su marca de alarma (`a`). Su `ocurrido_en` es el momento en que llegaron: la hora de la central puede faltar (`+4s`).
 
 **Cambios de `hab`:** solo generan un evento propio cuando son **por horario**. Eso ocurre en el nodo 1 cuando `hab` y `FL_HORARIO_NOCTURNO` cambian en el mismo `estado` y no hay un comando `activar` o `desactivar` para ese nodo en los últimos 15 s. El evento es "Habitación desactivada (horario)" o "Habitación activada (horario)". Los cambios por comando ya tienen su evento de comando, y los hechos desde la app local llegan como evento de la central.
 
@@ -1309,10 +1333,12 @@ No hay registro abierto. El admin genera un enlace y lo comparte (por ejemplo, p
   "online_cambio_en": "2026-09-27T19:00:02Z",
   "recibido_en": "2026-09-27T19:05:10Z",
   "antiguedad_s": 3,                 // segundos desde recibido_en
-  "central": { /* payload crudo §4.3, sin modificar */ },
+  "central": { /* payload §4.3 */ },  // null si la central nunca publicó
   "alarmas_abiertas": [ /* Alarma[] */ ]
 }
 ```
+
+`central` es el payload de §4.3 validado (`EstadoCentral`), con los mismos campos, nombres (`enLinea`, `horaValida`) y valores. Al estar tipado, el frontend recibe sus tipos por OpenAPI.
 
 > El frontend dibuja las tarjetas a partir de `central.nodos`, con las mismas reglas que la app local (`TarjetaNodo`, §11.4).
 
@@ -1346,6 +1372,9 @@ No hay registro abierto. El admin genera un enlace y lo comparte (por ejemplo, p
 {"id": 881, "ocurrido_en": "...", "origen": "usuario", "usuario": {"id": 2, "nombre": "Laura"},
  "nodo_id": 2, "tipo": "comando", "texto": "Laura silenció Baño", "es_alarma": false}
 ```
+
+- Orden: de la más reciente a la más antigua por `id`. `limit` vale 50 por defecto. Si hay más, `siguiente` trae el `antes_de_id` de la página siguiente.
+- `desde` y `hasta` filtran por `inicio_en` (alarmas) u `ocurrido_en` (eventos), en el intervalo `[desde, hasta)`. Van en ISO 8601 **con zona horaria** (`Z` o `-05:00`); sin ella, la API responde 400: una hora sin zona es ambigua.
 
 Tiempo de respuesta = `fin_en - inicio_en` de las alarmas con `cerrada_por = "usuario"`.
 
@@ -1411,8 +1440,10 @@ El vínculo **se completa en Telegram**, no con otra llamada a la API (§10.7.3)
 ## 9. WebSocket
 
 - **URL:** `wss://<DOMINIO>/ws/v1/casas/{casa_id}`
-- **Autenticación:** cookie de sesión en el handshake. Se verifica que el `Origin` sea el permitido y que el usuario sea miembro de la casa. Si falla, cierra con código `4401` o `4403`.
-- **Al conectar,** el servidor envía de inmediato `{"tipo":"estado", ...}` con el `EstadoCasa` actual.
+- **Autenticación:** cookie de sesión en el handshake. Se verifica que el `Origin` sea el permitido y que el usuario sea miembro de la casa. Si falla, cierra con código `4401` (sin sesión vigente) o `4403` (otro origen, o no es miembro).
+  - El servidor **acepta la conexión y luego la cierra** con ese código. Si rechazara el handshake, el navegador solo vería un error genérico, sin el código que le dice si ir al login.
+  - Con cada `ping` se revisan de nuevo la sesión y la membresía: cerrar sesión o perder el acceso corta el WS a más tardar en el siguiente ping (25 s).
+- **Al conectar,** el servidor envía de inmediato `{"tipo":"estado", ...}` con el `EstadoCasa` actual. Registra al cliente antes de enviarlo, así no pierde una alarma o un evento que ocurra entremedio.
 
 **Servidor → cliente**
 
@@ -1994,7 +2025,8 @@ const char* ID_CASA      = "casa-abuela-x7k2";     // == casas.codigo en la BD
 - conectarse al broker como una central (TLS 8883 o 1883 en local), con LWT idéntico al firmware. Usa `paho-mqtt` con hilos, así funciona igual en Windows, y corre con el entorno de `backend/`: `uv run python ../tools/simulador_central.py --casa casa-dev --clave <clave>`;
 - publicar `estado` cada 5 s con el formato exacto de §4.3;
 - aceptar comandos en `cmd` y aplicarlos (activar, desactivar, silenciar), publicando el `estado` de inmediato;
-- aceptar un menú o CLI para disparar alarmas por nodo, desconectar un nodo, reiniciar la central (`visto:false`) y cortar la conexión sin `disconnect` (para probar el LWT).
+- aceptar un menú o CLI para disparar alarmas por nodo, desconectar un nodo, reiniciar la central (`visto:false`) y cortar la conexión sin `disconnect` (para probar el LWT);
+- leer las órdenes por una tubería, una por línea, con `w <segundos>` para esperar. Así se guiona un escenario completo: `printf 'w 8\na 2\nw 10\ns 2\n' | uv run python ../tools/simulador_central.py --casa casa-dev`. Al acabarse las órdenes, la central sigue publicando hasta que la detengan.
 
 Criterio: con el simulador, en menos de 5 s tras disparar una alarma, debe haber notificación push en un Android real, mensaje de Telegram (si está vinculado) y la tarjeta en rojo en la PWA. Tocar "Silenciar" en Telegram debe apagar la alarma del simulador.
 

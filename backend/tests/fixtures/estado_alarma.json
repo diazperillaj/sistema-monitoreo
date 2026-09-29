@@ -1,0 +1,15 @@
+{
+  "hora": "27/09/2026 14:05:10",
+  "horaValida": true,
+  "red": "wifi",
+  "nodos": [
+    {"id":0,"nombre":"Puerta de entrada","visto":true,"enLinea":true,"hab":1,"al":0,"mov":0,"fl":64,"c1":0,"l1":0,"c2":0,"l2":0,"v1":0.00,"v2":0,"hace":0},
+    {"id":1,"nombre":"Habitación","visto":true,"enLinea":true,"hab":1,"al":0,"mov":0,"fl":65,"c1":745,"l1":1800,"c2":0,"l2":0,"v1":0.00,"v2":0,"hace":2},
+    {"id":2,"nombre":"Baño","visto":true,"enLinea":true,"hab":1,"al":1,"mov":0,"fl":64,"c1":0,"l1":600,"c2":0,"l2":0,"v1":0.00,"v2":0,"hace":1},
+    {"id":3,"nombre":"Cocina · agua","visto":true,"enLinea":true,"hab":1,"al":0,"mov":1,"fl":65,"c1":212,"l1":480,"c2":0,"l2":0,"v1":6.40,"v2":0,"hace":1},
+    {"id":4,"nombre":"Cocina · gas","visto":true,"enLinea":true,"hab":3,"al":0,"mov":0,"fl":66,"c1":0,"l1":240,"c2":300,"l2":1200,"v1":24.60,"v2":640,"hace":0}
+  ],
+  "eventos": [
+    {"t":"27/09 14:04:58","x":"ALARMA Baño: sin movimiento por 10 min","a":true}
+  ]
+}

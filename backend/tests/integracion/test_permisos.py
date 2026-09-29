@@ -28,6 +28,9 @@ async def dos_casas(datos: Datos) -> tuple[models.Casa, models.Casa]:
         ("PATCH", "/casas/{id}", {"nombre": "Mía"}),
         ("GET", "/casas/{id}/ajustes", None),
         ("PATCH", "/casas/{id}/ajustes", {"recordatorio_min": 10}),
+        ("GET", "/casas/{id}/estado", None),
+        ("GET", "/casas/{id}/alarmas", None),
+        ("GET", "/casas/{id}/eventos", None),
     ],
 )
 async def test_nadie_accede_a_una_casa_ajena(

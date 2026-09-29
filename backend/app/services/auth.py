@@ -103,11 +103,10 @@ class AccesoCasa:
     rol: str  # rol efectivo: el superadmin cuenta como admin en todas las casas
 
 
-async def usuario_actual(request: Request, response: Response, db: Db) -> UsuarioActual:
-    token = request.cookies.get(COOKIE)
-    if not token:
-        raise error_api(401, "no_autenticado", "Inicia sesión para continuar.")
-    momento = ahora()
+async def buscar_sesion(
+    db: AsyncSession, token: str, momento: datetime
+) -> tuple[models.Sesion, models.Usuario] | None:
+    """La sesión vigente de ese token y su usuario, si sigue activo. La usan la API y el WS."""
     fila = (
         await db.execute(
             select(models.Sesion, models.Usuario)
@@ -119,34 +118,54 @@ async def usuario_actual(request: Request, response: Response, db: Db) -> Usuari
             )
         )
     ).first()
-    if fila is None:
+    return (fila[0], fila[1]) if fila else None
+
+
+def a_usuario_actual(sesion: models.Sesion, usuario: models.Usuario) -> UsuarioActual:
+    return UsuarioActual(
+        usuario.id, usuario.email, usuario.nombre, usuario.es_superadmin, sesion.id
+    )
+
+
+async def usuario_actual(request: Request, response: Response, db: Db) -> UsuarioActual:
+    token = request.cookies.get(COOKIE)
+    if not token:
+        raise error_api(401, "no_autenticado", "Inicia sesión para continuar.")
+    momento = ahora()
+    encontrada = await buscar_sesion(db, token, momento)
+    if encontrada is None:
         raise error_api(401, "no_autenticado", "La sesión venció. Inicia sesión de nuevo.")
-    sesion, usuario = fila
+    sesion, usuario = encontrada
     settings: Settings = request.app.state.settings
     if momento - sesion.ultimo_uso_en > RENOVAR_TRAS:  # renovación deslizante (§12.2)
         sesion.ultimo_uso_en = momento
         sesion.expira_en = momento + timedelta(days=settings.sesion_dias)
         await db.commit()
         poner_cookie(response, token, settings)
-    return UsuarioActual(
-        usuario.id, usuario.email, usuario.nombre, usuario.es_superadmin, sesion.id
-    )
+    return a_usuario_actual(sesion, usuario)
 
 
 Actual = Annotated[UsuarioActual, Depends(usuario_actual)]
 
 
-async def requiere_miembro(casa_id: int, usuario: Actual, db: Db) -> AccesoCasa:
+async def rol_en_casa(db: AsyncSession, usuario: UsuarioActual, casa_id: int) -> str | None:
+    """El rol efectivo del usuario en la casa, o None si no es miembro (o la casa no existe).
+    El superadmin cuenta como admin en todas las casas."""
     rol = await db.scalar(
         select(models.Miembro.rol).where(
             models.Miembro.usuario_id == usuario.id, models.Miembro.casa_id == casa_id
         )
     )
-    if usuario.es_superadmin:
-        if await db.get(models.Casa, casa_id) is None:
-            raise error_api(404, "no_encontrado", "No existe esa casa.")
-        return AccesoCasa(usuario, casa_id, rol or "admin")
+    if rol is None and usuario.es_superadmin and await db.get(models.Casa, casa_id) is not None:
+        return "admin"
+    return rol
+
+
+async def requiere_miembro(casa_id: int, usuario: Actual, db: Db) -> AccesoCasa:
+    rol = await rol_en_casa(db, usuario, casa_id)
     if rol is None:
+        if usuario.es_superadmin:
+            raise error_api(404, "no_encontrado", "No existe esa casa.")
         # También si la casa no existe: a quien no es miembro no se le confirma su existencia
         raise error_api(403, "sin_permiso", "No tienes acceso a esta casa.")
     return AccesoCasa(usuario, casa_id, rol)
