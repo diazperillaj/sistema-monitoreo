@@ -76,7 +76,12 @@ def cargar_vapid(clave_publica: str, clave_privada: str) -> Vapid | None:
 
     Si la pública no corresponde a la privada, el navegador se suscribiría con una y el
     servidor firmaría con otra: todos los envíos fallarían. Mejor detectarlo al arrancar."""
+    clave_publica, clave_privada = clave_publica.strip(), clave_privada.strip()
     if not clave_publica or not clave_privada:
+        log.warning(
+            "Web Push desactivado: faltan VAPID_CLAVE_PUBLICA o VAPID_CLAVE_PRIVADA en el .env "
+            "(se crean con: python -m app.cli generar-vapid)"
+        )
         return None
     try:
         vapid = Vapid.from_string(clave_privada)
@@ -110,8 +115,12 @@ class CanalWebPush:
         self, vapid: Vapid | None, sujeto: str, esperas: tuple[float, ...] = ESPERAS_S
     ) -> None:
         self._vapid = vapid
-        self._sujeto = sujeto
+        self._sujeto = sujeto.strip()
         self._esperas = esperas
+        if vapid is not None and not self._sujeto:
+            log.warning(
+                "Web Push desactivado: falta VAPID_SUJETO en el .env (mailto:tu@correo.com)"
+            )
 
     @property
     def activo(self) -> bool:

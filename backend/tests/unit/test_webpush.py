@@ -53,6 +53,15 @@ def test_claves_vapid() -> None:
     assert cargar_vapid("", privada) is None
 
 
+def test_el_log_dice_que_falta_para_activar_web_push(caplog: pytest.LogCaptureFixture) -> None:
+    publica, privada = generar_claves()
+    assert cargar_vapid(" ", "") is None
+    assert "faltan VAPID_CLAVE_PUBLICA o VAPID_CLAVE_PRIVADA" in caplog.text
+    assert cargar_vapid(publica + "\n", " " + privada + "\r") is not None  # espacios o CRLF
+    assert not CanalWebPush(cargar_vapid(publica, privada), "").activo
+    assert "falta VAPID_SUJETO" in caplog.text
+
+
 # ------------------------------------------------------------------ envío (sin red)
 class RespuestaFalsa:
     def __init__(self, codigo: int) -> None:

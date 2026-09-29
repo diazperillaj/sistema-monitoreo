@@ -2174,7 +2174,9 @@ docker compose ps db                               # esperar "healthy"
 
 # 3) Llaves de Web Push
 docker compose run --rm api python -m app.cli generar-vapid
-#   -> copiar VAPID_CLAVE_PUBLICA y VAPID_CLAVE_PRIVADA al .env
+#   -> copiar VAPID_CLAVE_PUBLICA y VAPID_CLAVE_PRIVADA al .env, y poner VAPID_SUJETO=mailto:<tu correo>
+#   -> se generan una sola vez por servidor: si cambian, cada celular debe volver a activar las notificaciones
+#   -> si faltan o no corresponden, la API arranca sin Web Push y el log dice qué falta
 
 # 4) La app: compila el frontend (Node dentro de Docker; 1–3 min la primera vez) y aplica las migraciones al arrancar
 docker compose up -d --build
