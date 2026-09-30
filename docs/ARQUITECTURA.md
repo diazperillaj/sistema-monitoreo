@@ -1,6 +1,6 @@
 # Sistema de monitoreo doméstico — Arquitectura del backend
 
-> **Versión:** 1.14 · **Fecha:** 29/09/2026 · **Autor:** Juan Pablo (con Claude)
+> **Versión:** 1.15 · **Fecha:** 30/09/2026 · **Autor:** Juan Pablo (con Claude)
 > **Objetivo del documento:** especificación completa para desarrollar el backend y la app web con Claude Code.
 > **Alcance:** backend, infraestructura y frontend. **El firmware de las ESP32 ya existe y NO se modifica**; solo se le cambian valores de configuración (§12.9).
 >
@@ -26,6 +26,8 @@
 > **Cambios en 1.13 (F3):** el comando se guarda y se avisa por WebSocket antes de publicarlo; eventos "Laura silenció Baño" y "La central no confirmó…"; solo un `estado` en vivo y con el nodo conocido confirma; 503 `mqtt_no_disponible` si el backend no tiene conexión con el broker (§6.5, §8.4, §9).
 >
 > **Cambios en 1.14 (F4):** Web Push completo: quién marca `ultimo_aviso_en` y cuenta `avisos_enviados`, cuándo se avisa "Central en línea", urgencia de cada aviso (§10.1); "Silenciar" solo en alarmas de sensor (§10.3); errores de envío (§10.4); claves VAPID validadas al arrancar y solo suscripciones de servicios de push conocidos (§12.7); respuestas de `/push` y `/notificaciones` (§8.7).
+>
+> **Cambios en 1.15 (F5):** mundo visual "Instrumentos de la casa" (S15, `DESIGN.md`); componentes con Radix directo y estilos propios, sin la CLI de shadcn, y fuentes Barlow servidas desde el sitio (§3.3); estructura de `frontend/` y nombres de componentes (§11.1, §11.4); el movimiento se muestra solo cuando lo hay y la lectura cruda del gas no se muestra (§11.4); la edad del dato deja de crecer a los 20 s y el sondeo de respaldo no reintenta (§11.3); manifest en grafito e íconos generados por `tools/generar_iconos.py` (§11.5); sonido y vibración con un toque (§11.6); WebSocket de mentira en las pruebas (§13.5).
 
 ---
 
@@ -252,7 +254,8 @@ Versiones **verificadas el 28/09/2026**, compilando un esqueleto con este stack.
 | Datos del servidor | TanStack Query | 5.104 | Caché, reintentos y mutaciones. El WebSocket escribe en su caché (§11.3) |
 | Cliente HTTP tipado | `openapi-fetch` + `openapi-typescript` | 0.17 / 7.13 | Tipos generados del OpenAPI de FastAPI (§11.7) |
 | Estilos | Tailwind CSS + `@tailwindcss/vite` | 4.3 | Modo oscuro con `prefers-color-scheme` |
-| Componentes | shadcn/ui (Radix) copiados al repo, `lucide-react` (íconos), `sonner` (avisos) | CLI shadcn 4 · sonner 2 | Solo los necesarios: Button, Input, Switch, Dialog, Tabs, Badge, DropdownMenu |
+| Componentes | Radix (`@radix-ui/react-switch`, `react-tabs`, `react-dialog`) con estilos propios, `lucide-react` (íconos), `sonner` (avisos) | Radix 1 · lucide 1.49 · sonner 2 | Sin la CLI de shadcn: Radix aporta el teclado y la accesibilidad, y cada pieza lleva el estilo del mundo visual (`DESIGN.md`) |
+| Fuentes | Barlow y Barlow Semi Condensed (`@fontsource`) | 5.3 | Servidas desde el propio sitio: la CSP no permite fuentes de terceros. Cifras tabulares para contadores y horas |
 | Gráficas | Recharts | 3.10 | Solo en la vista de gráficas, con carga diferida |
 | PWA | `vite-plugin-pwa` (`injectManifest`) + `workbox-precaching` + `workbox-routing` | 1.3 / 7.4 | Service worker propio en `src/sw.ts`, que se compila a `dist/sw.js` (§11.5) |
 | Pruebas | Vitest, Testing Library (`@testing-library/react`), MSW, `jsdom` | 5.0 / 16.3 / 3.0 | §13.5 |
@@ -273,7 +276,7 @@ La lógica de la app actual se **porta a TypeScript**: bits del protocolo, `text
 
 - **Nombres del dominio en español**, igual que en el firmware: `casa`, `nodo`, `alarma`, `evento`, `comando`, `habilitado`.
 - Nombres técnicos genéricos en inglés cuando sea lo idiomático (`router`, `service`, `schema`).
-- Frontend: componentes en PascalCase y hooks `useAlgo`, con nombres del dominio en español (`TarjetaNodo`, `useCasaEnVivo`).
+- Frontend: componentes en PascalCase y hooks `useAlgo`, con nombres del dominio en español (`Instrumento`, `useCasaEnVivo`).
 - Fechas en BD y API en **UTC ISO-8601**. La UI las muestra en `America/Bogota`.
 - Rutas de API bajo **`/api/v1`**.
   - Importante: la app local de la ESP32 detecta el "modo casa" pidiendo `/api/estado`. En el dominio del servidor esa ruta debe devolver 404 para que no haya confusión.
@@ -1353,7 +1356,7 @@ No hay registro abierto. El admin genera un enlace y lo comparte (por ejemplo, p
 
 `central` es el payload de §4.3 validado (`EstadoCentral`), con los mismos campos, nombres (`enLinea`, `horaValida`) y valores. Al estar tipado, el frontend recibe sus tipos por OpenAPI.
 
-> El frontend dibuja las tarjetas a partir de `central.nodos`, con las mismas reglas que la app local (`TarjetaNodo`, §11.4).
+> El frontend dibuja cada nodo a partir de `central.nodos`, con las mismas reglas que la app local (`Instrumento`, §11.4).
 
 ### 8.4 Comandos
 
@@ -1704,45 +1707,54 @@ SPA en **React 19 + TypeScript + Vite** (stack en §3.3):
 ```
 frontend/
 ├── package.json  package-lock.json   # "typescript": "~5.9.3" fijo (§3.3); "engines": {"node": ">=22.22"}
-├── index.html
+├── index.html              # viewport-fit=cover, theme-color por tema, ícono de iPhone
 ├── vite.config.ts          # React, Tailwind, vite-plugin-pwa, proxy de desarrollo (§11.7) y Vitest
-├── tsconfig.json  tsconfig.app.json  tsconfig.node.json   # "strict": true
+├── tsconfig.json  tsconfig.app.json  tsconfig.node.json  tsconfig.sw.json   # "strict": true
 ├── eslint.config.js  .prettierrc  .prettierignore
-├── components.json         # configuración de shadcn/ui
 ├── openapi.json            # exportado del backend (§11.7); versionado
 ├── public/
-│   └── icons/              # icon-192.png, icon-512.png (maskable), badge-72.png
+│   └── icons/              # icon-192, icon-512 (maskable), apple-touch-icon, badge-96: los dibuja tools/generar_iconos.py
 └── src/
-    ├── main.tsx            # QueryClient, Router, registro del service worker
+    ├── main.tsx            # QueryClient, Router, avisos (sonner) y aviso de nueva versión
     ├── rutas.tsx           # tabla de rutas y guardas (§11.2)
     ├── sw.ts               # service worker propio (§11.5)
-    ├── estilos.css         # Tailwind
+    ├── estilos.css         # Tailwind y los tokens del mundo visual (DESIGN.md)
     ├── vite-env.d.ts
     ├── api/
     │   ├── tipos.gen.ts    # GENERADO por openapi-typescript. No se edita a mano
     │   ├── cliente.ts      # openapi-fetch: credenciales, errores {codigo, mensaje}, 401 → /login
     │   └── consultas.ts    # hooks de TanStack Query (useEstadoCasa, useAlarmas, useComando…)
     ├── tiempo-real/
-    │   ├── useCasaEnVivo.ts  # WebSocket de la casa → caché de TanStack Query (§11.3)
-    │   ├── useAhora.ts       # "tic" de 1 s para interpolar contadores
-    │   └── useAlertaSonora.ts  # pitido y vibración con la app abierta (§11.6)
-    ├── dominio/
+    │   ├── useCasaEnVivo.ts      # WebSocket de la casa → caché de TanStack Query (§11.3)
+    │   ├── casaActual.ts         # la casa que se mira, su conexión y la edad del dato
+    │   ├── useComandoEnCurso.ts  # un comando desde el toque hasta que la central lo confirma (§11.3)
+    │   ├── useAhora.ts           # "tic" de 1 s para interpolar contadores
+    │   └── useAlertaSonora.ts    # pitido y vibración con la app abierta (§11.6)
+    ├── dominio/            # lógica pura, con pruebas
     │   ├── protocolo.ts    # espejo de app/protocolo.py: bits AL_*, HAB_*, FL_*, NODOS
-    │   └── textos.ts       # textosAlarma(), detalle por nodo, formato mm:ss (se porta de la app actual)
+    │   ├── textos.ts       # textosAlarma() y mm:ss, portados de la app actual
+    │   ├── instrumento.ts  # qué muestra cada nodo (reglas de detalle()): distintivo, escalas, datos, interruptores
+    │   ├── momento.ts      # la franja del momento (madrugada, noche o día) según las banderas
+    │   ├── conexion.ts     # qué tan al día está lo que se ve (en vivo, retraso, central desconectada…)
+    │   └── tiempo.ts       # horas y duraciones en es-CO, con la hora de Bogotá
     ├── componentes/
-    │   ├── ui/             # shadcn/ui copiados: button, input, switch, dialog, tabs, badge, dropdown-menu
-    │   ├── TarjetaNodo.tsx  BannerAlarmas.tsx  InterruptorNodo.tsx  BarraContador.tsx
-    │   ├── BannerConexion.tsx  AvisoSinCanal.tsx  AvisoNuevaVersion.tsx  GuiaInstalacionIOS.tsx
-    │   └── Layout.tsx      # barra superior, selector de casa, navegación inferior
+    │   ├── ui/             # Boton, Palanca (Radix Switch), Campo
+    │   ├── Instrumento.tsx  Escala.tsx  Odometro.tsx  Lampara.tsx  InterruptorNodo.tsx
+    │   ├── CampoAlarmas.tsx  FranjaMomento.tsx  BitacoraCentral.tsx  AvisoSinCanal.tsx
+    │   ├── AvisoNuevaVersion.tsx  GuiaInstalacionIOS.tsx
+    │   └── Layout.tsx      # barra superior con la conexión, navegación y la conexión en vivo de la casa
     ├── notificaciones/
     │   ├── webpush.ts      # permiso, suscribir, desuscribir, probar
-    │   └── telegram.ts     # vincular (abre la url y consulta preferencias), pausar, desvincular
+    │   ├── clave.ts        # la clave VAPID en bytes (también la usa sw.ts)
+    │   ├── instalacion.ts  # "Instalar app" (beforeinstallprompt)
+    │   └── telegram.ts     # F4b: vincular (abre la url y consulta preferencias), pausar, desvincular
     ├── vistas/
-    │   ├── Login.tsx  Invitacion.tsx  Casas.tsx  Tablero.tsx  Historial.tsx
-    │   └── Graficas.tsx  Miembros.tsx  Ajustes.tsx  Perfil.tsx  NoEncontrado.tsx
+    │   ├── Login.tsx  Casas.tsx  Tablero.tsx  Historial.tsx  Perfil.tsx  NoEncontrado.tsx
+    │   └── Invitacion.tsx  Graficas.tsx  Miembros.tsx  Ajustes.tsx   # F6
     ├── lib/
-    │   └── utils.ts        # cn(), que pide shadcn/ui
-    └── test/               # configuración de Testing Library y MSW; cada prueba va junto a su archivo (*.test.ts[x])
+    │   ├── utils.ts        # cn(): une clases (clsx)
+    │   └── dispositivo.ts  # "Chrome en Android", a partir del user-agent de una sesión
+    └── test/               # MSW (servidor.ts), datos de prueba y un WebSocket de mentira; cada prueba va junto a su archivo (*.test.ts[x])
 ```
 
 ### 11.2 Rutas
@@ -1792,18 +1804,18 @@ URLs limpias con `createBrowserRouter`. FastAPI responde `index.html` a cualquie
    | `comando` | Resuelve el interruptor pendiente (siguiente punto) |
    | `central` | Actualiza el banner de conexión |
 
-3. Reconecta con backoff (1, 2, 5, 10 y 30 s). Tras 3 fallos seguidos, activa `refetchInterval: 5000` en el estado hasta que el WS vuelva.
+3. Reconecta con backoff (1, 2, 5, 10 y 30 s). Tras 3 fallos seguidos, activa `refetchInterval: 5000` en el estado hasta que el WS vuelva. Ese sondeo no reintenta: si falla, se muestra enseguida "Sin conexión con el servidor".
 4. Envía `{"tipo":"ping"}` cada 25 s.
 
 **Comandos (interruptores y "Silenciar"):**
 - `useMutation` sobre `POST /casas/{id}/comandos`.
 - El control pasa a "enviando…" con el `id` del comando que devuelve el 202.
 - Al llegar el WS `comando` con ese `id`:
-  - `confirmado` → se queda en el nuevo valor;
+  - `confirmado` → se queda en el nuevo valor (el WS avisa la confirmación un instante antes que el `estado` con el valor nuevo: el control lo espera hasta 3 s);
   - `sin_confirmar` → vuelve al valor anterior y muestra el aviso "La central no confirmó el cambio".
 - Un 409 muestra el `mensaje` de la API (central desconectada o nodo sin conexión).
 
-**Contadores:** `useAhora(1000)` provoca un render por segundo. Al recibir un `EstadoCasa`, la app guarda la hora local de llegada. El valor mostrado es `c1 + antiguedad_s + (ahora - llegada)`, con las dos horas del reloj del navegador, cuando el flag `FL_CONTANDO1` está activo (igual con `c2`) y la central y el nodo están en línea, sin superar el límite. No se usa `ahora - recibido_en` porque el reloj del celular puede no coincidir con el del servidor.
+**Contadores:** `useAhora(1000)` provoca un render por segundo. Al recibir un `EstadoCasa`, la app guarda la hora local de llegada. El valor mostrado es `c1 + antiguedad_s + (ahora - llegada)`, con las dos horas del reloj del navegador, cuando el flag `FL_CONTANDO1` está activo (igual con `c2`) y la central y el nodo están en línea, sin superar el límite. No se usa `ahora - recibido_en` porque el reloj del celular puede no coincidir con el del servidor. La edad del dato (`antiguedad_s` más lo que pasó desde la llegada) deja de crecer a los 20 s: desde ahí el dato "tiene retraso" y los contadores se quedan quietos en vez de avanzar a ciegas.
 
 **Cliente HTTP (`api/cliente.ts`)**, con `openapi-fetch` tipado desde `tipos.gen.ts`:
 - `credentials: "same-origin"`;
@@ -1814,15 +1826,21 @@ URLs limpias con `createBrowserRouter`. FastAPI responde `index.html` a cualquie
 
 | Componente | Responsabilidad |
 |---|---|
-| `TarjetaNodo` | Dibuja un nodo según su `id` y sus bits. Mismas reglas que la función `detalle()` de la app actual: movimiento, contador y barra, caudal, temperatura y gas, horario nocturno, calentando, error de sensor. Distintivos: "Vigilando", "ALARMA", "Desactivado", "Sin conexión", "Esperando nodo". |
-| `InterruptorNodo` | Switch accesible (Radix). Deshabilitado si la central o el nodo están desconectados. Estado "enviando…" (§11.3). El nodo 4 tiene dos: "Gas y temperatura" (`sub 0`) y "Presencia" (`sub 1`). |
-| `BannerAlarmas` | Lista de alarmas abiertas con el texto de `textosAlarma()`, más el botón "Silenciar todas". |
-| `BannerConexion` | "Sin conexión con el servidor" (WS caído) · "La central está desconectada desde HH:MM" · "Datos con retraso" (`antiguedad_s > 20`). |
-| `AvisoSinCanal` | En el tablero: "No estás recibiendo alertas en este celular → Activar", si no hay Web Push activo en el dispositivo ni Telegram vinculado y activo. Lleva a `/perfil`. |
-| Sección Notificaciones (en `Perfil`) | **Web Push:** activar (pide permiso **desde un toque**), probar, desactivar. **Telegram:** vincular, pausar/reanudar, probar, desvincular; se oculta si `telegram.disponible = false`. En iPhone sin instalar, muestra primero `GuiaInstalacionIOS` (§10.5). |
+| `Instrumento` (antes `TarjetaNodo`) | La tira de cada nodo, con las reglas de `detalle()` de la app actual (`dominio/instrumento.ts`): luz, nombre, palanca, escalas y datos con rótulo de placa (horario, caudal, temperatura, error de sensor, calentando). "Vigilando" lo dicen la luz y la palanca; en palabras solo va lo que no es normal: "ALARMA", "Desactivado", "En pausa por la noche", "Sin conexión · último dato hace…", "Esperando nodo" y, con la central desconectada, "Sin datos". El movimiento se dice solo cuando lo hay ("Movimiento ahora"), porque la escala ya cuenta el tiempo sin él; la lectura cruda del sensor de gas no se muestra (la escala dice si hay gas). Lo que no vigila va rayado. |
+| `Escala` (antes `BarraContador`) | Escala calibrada de cada contador: 20 marcas, escalones al 25, 50 y 75 % que se oscurecen al cruzarlos, el último cuarto en ámbar, el límite en rojo y una aguja que avanza cada segundo y vuelve rápido a cero al reiniciarse (§11.3). `role="meter"`. |
+| `Odometro` | Las lecturas que cambian: cada cifra es una rueda que gira, como en un contador de agua. |
+| `InterruptorNodo` | Palanca accesible (Radix Switch). Deshabilitada si la central o el nodo están desconectados. "Enviando…" hasta que la central confirma (§11.3). El nodo 4 tiene dos: "Gas y temperatura" (`sub 0`) y "Presencia" (`sub 1`). |
+| `CampoAlarmas` (antes `BannerAlarmas`) | El campo rojo, la única superficie roja de la app: qué suena (texto de `textosAlarma()`), dónde, desde cuándo en cifras grandes y "Silenciar"; con varias alarmas, una fila por nodo y "Silenciar todas". Ahí se activa o apaga el sonido. Las alarmas se anuncian con `aria-live="assertive"`. |
+| Avisos de conexión (en `Layout`, antes `BannerConexion`) | La luz y el texto de la barra superior, y una franja para lo que cambia cómo leer el tablero (`dominio/conexion.ts`): "Sin conexión con el servidor" (WS caído y el sondeo fallando), "La central está desconectada desde las HH:MM" y "Datos con retraso" (más de 20 s sin reportes). Si hay alarma y no se está en el tablero, una franja roja lleva a él. |
+| `FranjaMomento` | Qué vigila la casa a esta hora (madrugada, noche o día), según las banderas de la central y con su reloj. |
+| `BitacoraCentral` | "Lo último en la central": la bitácora que trae el `estado` (§4.3). En pantallas anchas va en la columna izquierda del tablero. |
+| `AvisoSinCanal` | En el tablero: "Este dispositivo no recibe alertas → Activar" (o por qué: bloqueadas, en pausa, iPhone sin instalar), si no hay Web Push activo en el dispositivo ni Telegram vinculado y activo. Lleva a `/perfil`. |
+| Sección de alertas (en `Perfil`) | **Web Push:** activar (pide permiso **desde un toque**), probar, desactivar; un error queda junto al botón. Pausa de la cuenta (`notif_webpush`). **Telegram:** vincular, pausar/reanudar, probar, desvincular (F4b); se oculta si `telegram.disponible = false`. En iPhone sin instalar, muestra primero `GuiaInstalacionIOS` (§10.5). |
 | `AvisoNuevaVersion` | "Nueva versión disponible → Actualizar" cuando el service worker detecta una actualización (§11.5). |
 
 La lógica pura (bits, textos, formato de tiempos) vive en `src/dominio/` y se **porta de la app actual a TypeScript**, con pruebas (§13.5).
+
+**Mundo visual:** "Instrumentos de la casa" (S15). Sus tokens (colores de día y de noche, tipografía, radios, movimiento) y sus reglas están en [`DESIGN.md`](../DESIGN.md), en la raíz, junto con el contexto de producto ([`PRODUCT.md`](../PRODUCT.md)). Un cambio de estilo se hace en `src/estilos.css` y se refleja allí.
 
 ### 11.5 PWA y service worker
 
@@ -1831,8 +1849,8 @@ La lógica pura (bits, textos, formato de tiempos) vive en `src/dominio/` y se *
 - **Manifest** (lo genera el plugin como `/manifest.webmanifest`):
   - `name: "Monitoreo del hogar"`, `short_name: "Alarma hogar"`, `lang: "es"`;
   - `start_url: "/"`, `scope: "/"`, `display: "standalone"`;
-  - `theme_color` y `background_color: "#0f172a"`;
-  - íconos de 192 y 512 px con `purpose: "any maskable"`.
+  - `theme_color` y `background_color: "#151a1c"`: el grafito del tema de noche, para que una alerta que despierta a alguien no abra con un pantallazo blanco;
+  - íconos de 192 y 512 px con `purpose: "any maskable"`. Los dibuja `tools/generar_iconos.py` (`uv run --with pillow python ../tools/generar_iconos.py`, desde `backend/`), junto con el de iPhone y la insignia de Android.
 - **`src/sw.ts`:**
   - `precacheAndRoute(self.__WB_MANIFEST)`: solo el "cascarón" (HTML, JS, CSS, íconos);
   - `NavigationRoute` hacia `index.html` con `denylist: [/^\/api\//, /^\/ws\//]`;
@@ -1847,7 +1865,7 @@ La lógica pura (bits, textos, formato de tiempos) vive en `src/dominio/` y se *
 
 ### 11.6 Comportamientos obligatorios
 
-- **Alertas en primer plano:** con la app abierta, pitido con WebAudio y vibración cada segundo mientras haya alarmas. Se habilita con un toque del usuario, igual que en la app actual.
+- **Alertas en primer plano:** con la app abierta, pitido con WebAudio y vibración cada segundo mientras haya alarmas. Los dos se habilitan con un toque del usuario ("Activar sonido"), igual que en la app actual: el navegador bloquea el sonido y la vibración sin él.
 - **Instalación:** botón "Instalar app" (`beforeinstallprompt` en Android) y guía para iPhone (§10.5).
 - **Vincular Telegram:** al tocar "Vincular", la app abre la `url` devuelta (en Android e iPhone abre la app de Telegram). Luego consulta `['preferencias']` cada 3 s hasta que `vinculado = true` o pasen 15 min, y muestra "Vinculado como @usuario".
 - **Sesión vencida:** cualquier 401 lleva a `/login?volver=<ruta>`.
@@ -1855,9 +1873,9 @@ La lógica pura (bits, textos, formato de tiempos) vive en `src/dominio/` y se *
   - contraste AA y tamaños táctiles ≥ 44 px;
   - interruptores y diálogos de Radix, con teclado y lector de pantalla;
   - las alarmas se anuncian con `aria-live="assertive"`.
-- **Modo oscuro:** automático con `prefers-color-scheme` (Tailwind `dark:`).
+- **Modo oscuro:** automático con `prefers-color-scheme`: los tokens de `estilos.css` cambian de valor (esmalte de día, grafito de noche; `DESIGN.md`).
 - **Idioma y hora:** textos en español. Fechas con `Intl.DateTimeFormat("es-CO", {timeZone: "America/Bogota"})`.
-- **Peso:** el tablero (carga inicial) debe quedar en **≤ 150 KB gzip** de JS. Recharts y las vistas diferidas van en chunks aparte.
+- **Peso:** el tablero (carga inicial) debe quedar en **≤ 150 KB gzip** de JS (en F5: 126 KB). Recharts y las vistas diferidas van en chunks aparte.
 
 ### 11.7 Desarrollo, tipos y build
 
@@ -2068,13 +2086,13 @@ Bajar los tiempos del firmware temporalmente (por ejemplo, el baño a 1 min) y v
 
 ### 13.5 Frontend
 
-Con **Vitest + Testing Library**, y la API simulada con **MSW** usando los tipos generados:
+Con **Vitest + Testing Library**, la API simulada con **MSW** usando los tipos generados y el WebSocket con una clase de mentira (`src/test/wsFalso.ts`) que la prueba abre, alimenta y corta:
 
 - **`src/dominio/`**, con pruebas unitarias portadas de la app actual:
   - `textosAlarma()` para cada bit, incluido el nodo 4 con gas y temperatura a la vez;
   - formato `mm:ss`;
   - interpolación de contadores con el reloj del navegador, sin superar el límite.
-- **`TarjetaNodo`:** para cada nodo, el distintivo correcto ("ALARMA", "Desactivado", "Sin conexión", "Esperando nodo"), los contadores y los dos interruptores del nodo 4.
+- **`Instrumento` (antes `TarjetaNodo`):** para cada nodo, el distintivo correcto ("ALARMA", "Desactivado", "Sin conexión", "Esperando nodo"), los contadores y los dos interruptores del nodo 4.
 - **Interruptor:** clic → "enviando…" → mensaje WS `comando` `confirmado` (se queda) o `sin_confirmar` (se revierte y avisa). Un 409 muestra el mensaje de la API.
 - **`useCasaEnVivo`:** un mensaje `estado` actualiza la caché. Si se cae el WS, pasa a polling y vuelve al reconectar.
 - **Rutas y guardas:** sin sesión → `/login?volver=…`; un cuidador que entra a `/casa/1/miembros` es redirigido.
@@ -2270,7 +2288,7 @@ Solo si se quiere ofrecer el canal de Telegram (§10.7). Sin esto, la app funcio
 
 ## 17. Decisiones confirmadas y pendientes
 
-Confirmadas el 28/09/2026: S1–S9 y P1 por Juan Pablo, y S10–S14 tras contrastar la especificación con el firmware. Ya están aplicadas en el resto del documento.
+Confirmadas el 28/09/2026: S1–S9 y P1 por Juan Pablo, y S10–S14 tras contrastar la especificación con el firmware. S15, el 29/09/2026. Ya están aplicadas en el resto del documento.
 
 | # | Tema | Decisión | Dónde |
 |---|---|---|---|
@@ -2288,6 +2306,7 @@ Confirmadas el 28/09/2026: S1–S9 y P1 por Juan Pablo, y S10–S14 tras contras
 | S12 | Lecturas | Solo de nodos `visto` y `enLinea`: se descartan los valores congelados de un nodo sin conexión y los ceros de uno aún no visto. | §6.2, §7.2 |
 | S13 | Mensajes retenidos | Un `estado` retenido se procesa, pero no cambia `recibido_en` ni genera lecturas. | §6.3 |
 | S14 | Usuario MQTT del backend | **`backend_api`**: el guion bajo impide que una central (`ID_CASA`) tenga el mismo nombre y le cambie la clave por error. | §5.4, §12.6 |
+| S15 | Mundo visual | **"Instrumentos de la casa"**: cada nodo es un medidor con escala calibrada que muestra cuánto falta para su alarma. Rojo solo para alarmas, ámbar solo para el último cuarto de una escala, verdín para "vigilando" y rayado para lo que no vigila. Elegido el 29/09/2026 entre varias direcciones. | §11.4, `DESIGN.md` |
 | P1 | Dominio de la app | **`sistemamonitoreo.duckdns.org`**, en la raíz. Se usa en `DOMINIO`, en el certificado del MQTT y en `MQTT_HOST` del firmware. Ya está en el actualizador de DuckDNS y en el Caddyfile (29/09/2026). | §5.3, §15.2 |
 
 **Pendientes:** ninguno.

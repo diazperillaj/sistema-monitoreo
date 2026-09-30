@@ -18,5 +18,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src/sw.ts", "src/push/clave.ts"]
+  "include": ["src/sw.ts", "src/notificaciones/clave.ts"]
 }

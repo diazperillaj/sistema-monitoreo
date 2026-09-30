@@ -1,0 +1,573 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-30T04:56:15.029Z",
+  "title": "Design System: Monitoreo del hogar",
+  "extensions": {
+    "colorMeta": {
+      "suelo": {
+        "role": "neutral",
+        "displayName": "Acero",
+        "canonical": "#e4e9e8",
+        "dark": "#0c0f10",
+        "tonalRamp": [
+          "oklch(15% 0.006 180)",
+          "oklch(26% 0.006 180)",
+          "oklch(37% 0.006 180)",
+          "oklch(48% 0.006 180)",
+          "oklch(59% 0.006 180)",
+          "oklch(70% 0.006 180)",
+          "oklch(82% 0.006 180)",
+          "oklch(95% 0.006 180)"
+        ]
+      },
+      "cara": {
+        "role": "neutral",
+        "displayName": "Esmalte",
+        "canonical": "#f9fbfa",
+        "dark": "#151a1c",
+        "tonalRamp": [
+          "oklch(15% 0.004 170)",
+          "oklch(26% 0.004 170)",
+          "oklch(37% 0.004 170)",
+          "oklch(48% 0.004 170)",
+          "oklch(59% 0.004 170)",
+          "oklch(70% 0.004 170)",
+          "oklch(82% 0.004 170)",
+          "oklch(95% 0.004 170)"
+        ]
+      },
+      "cara-2": {
+        "role": "neutral",
+        "displayName": "Esmalte hundido",
+        "canonical": "#eef2f1",
+        "dark": "#1b2124",
+        "tonalRamp": [
+          "oklch(15% 0.005 175)",
+          "oklch(26% 0.005 175)",
+          "oklch(37% 0.005 175)",
+          "oklch(48% 0.005 175)",
+          "oklch(59% 0.005 175)",
+          "oklch(70% 0.005 175)",
+          "oklch(82% 0.005 175)",
+          "oklch(95% 0.005 175)"
+        ]
+      },
+      "filo": {
+        "role": "neutral",
+        "displayName": "Filete",
+        "canonical": "#c9d2d0",
+        "dark": "#2b3337",
+        "tonalRamp": [
+          "oklch(15% 0.01 180)",
+          "oklch(26% 0.01 180)",
+          "oklch(37% 0.01 180)",
+          "oklch(48% 0.01 180)",
+          "oklch(59% 0.01 180)",
+          "oklch(70% 0.01 180)",
+          "oklch(82% 0.01 180)",
+          "oklch(95% 0.01 180)"
+        ]
+      },
+      "marca": {
+        "role": "neutral",
+        "displayName": "Marca de escala",
+        "canonical": "#8e9a98",
+        "dark": "#56636a",
+        "tonalRamp": [
+          "oklch(15% 0.012 185)",
+          "oklch(26% 0.012 185)",
+          "oklch(37% 0.012 185)",
+          "oklch(48% 0.012 185)",
+          "oklch(59% 0.012 185)",
+          "oklch(70% 0.012 185)",
+          "oklch(82% 0.012 185)",
+          "oklch(95% 0.012 185)"
+        ]
+      },
+      "tinta": {
+        "role": "primary",
+        "displayName": "Tinta de grafito",
+        "canonical": "#14191b",
+        "dark": "#e7ecea",
+        "tonalRamp": [
+          "oklch(15% 0.008 220)",
+          "oklch(26% 0.008 220)",
+          "oklch(37% 0.008 220)",
+          "oklch(48% 0.008 220)",
+          "oklch(59% 0.008 220)",
+          "oklch(70% 0.008 220)",
+          "oklch(82% 0.008 220)",
+          "oklch(95% 0.008 220)"
+        ]
+      },
+      "tinta-2": {
+        "role": "neutral",
+        "displayName": "Tinta 2",
+        "canonical": "#4b585c",
+        "dark": "#a9b4b8",
+        "tonalRamp": [
+          "oklch(15% 0.017 215)",
+          "oklch(26% 0.017 215)",
+          "oklch(37% 0.017 215)",
+          "oklch(48% 0.017 215)",
+          "oklch(59% 0.017 215)",
+          "oklch(70% 0.017 215)",
+          "oklch(82% 0.017 215)",
+          "oklch(95% 0.017 215)"
+        ]
+      },
+      "tinta-3": {
+        "role": "neutral",
+        "displayName": "Tinta 3",
+        "canonical": "#66747a",
+        "dark": "#85929a",
+        "tonalRamp": [
+          "oklch(15% 0.017 220)",
+          "oklch(26% 0.017 220)",
+          "oklch(37% 0.017 220)",
+          "oklch(48% 0.017 220)",
+          "oklch(59% 0.017 220)",
+          "oklch(70% 0.017 220)",
+          "oklch(82% 0.017 220)",
+          "oklch(95% 0.017 220)"
+        ]
+      },
+      "alarma": {
+        "role": "secondary",
+        "displayName": "Rojo de señal",
+        "canonical": "#c42b21",
+        "dark": "#ff5b4f",
+        "tonalRamp": [
+          "oklch(15% 0.19 29)",
+          "oklch(26% 0.19 29)",
+          "oklch(37% 0.19 29)",
+          "oklch(48% 0.19 29)",
+          "oklch(59% 0.19 29)",
+          "oklch(70% 0.19 29)",
+          "oklch(82% 0.19 29)",
+          "oklch(95% 0.19 29)"
+        ]
+      },
+      "alarma-campo": {
+        "role": "secondary",
+        "displayName": "Campo rojo",
+        "canonical": "#c42b21",
+        "dark": "#7f1d17",
+        "tonalRamp": [
+          "oklch(15% 0.17 29)",
+          "oklch(26% 0.17 29)",
+          "oklch(37% 0.17 29)",
+          "oklch(48% 0.17 29)",
+          "oklch(59% 0.17 29)",
+          "oklch(70% 0.17 29)",
+          "oklch(82% 0.17 29)",
+          "oklch(95% 0.17 29)"
+        ]
+      },
+      "sobre-alarma": {
+        "role": "secondary",
+        "displayName": "Sobre alarma",
+        "canonical": "#ffffff",
+        "dark": "#ffe9e6",
+        "tonalRamp": [
+          "oklch(15% 0.02 25)",
+          "oklch(26% 0.02 25)",
+          "oklch(37% 0.02 25)",
+          "oklch(48% 0.02 25)",
+          "oklch(59% 0.02 25)",
+          "oklch(70% 0.02 25)",
+          "oklch(82% 0.02 25)",
+          "oklch(95% 0.02 25)"
+        ]
+      },
+      "sobre-alarma-2": {
+        "role": "secondary",
+        "displayName": "Sobre alarma 2",
+        "canonical": "#ffe3e0",
+        "dark": "#ffc9c2",
+        "tonalRamp": [
+          "oklch(15% 0.035 25)",
+          "oklch(26% 0.035 25)",
+          "oklch(37% 0.035 25)",
+          "oklch(48% 0.035 25)",
+          "oklch(59% 0.035 25)",
+          "oklch(70% 0.035 25)",
+          "oklch(82% 0.035 25)",
+          "oklch(95% 0.035 25)"
+        ]
+      },
+      "ambar": {
+        "role": "tertiary",
+        "displayName": "Ámbar de último tramo",
+        "canonical": "#c07a06",
+        "dark": "#f0b13a",
+        "tonalRamp": [
+          "oklch(15% 0.14 70)",
+          "oklch(26% 0.14 70)",
+          "oklch(37% 0.14 70)",
+          "oklch(48% 0.14 70)",
+          "oklch(59% 0.14 70)",
+          "oklch(70% 0.14 70)",
+          "oklch(82% 0.14 70)",
+          "oklch(95% 0.14 70)"
+        ]
+      },
+      "ambar-tinta": {
+        "role": "tertiary",
+        "displayName": "Ámbar tinta",
+        "canonical": "#8a5300",
+        "dark": "#f2c261",
+        "tonalRamp": [
+          "oklch(15% 0.11 65)",
+          "oklch(26% 0.11 65)",
+          "oklch(37% 0.11 65)",
+          "oklch(48% 0.11 65)",
+          "oklch(59% 0.11 65)",
+          "oklch(70% 0.11 65)",
+          "oklch(82% 0.11 65)",
+          "oklch(95% 0.11 65)"
+        ]
+      },
+      "ambar-fondo": {
+        "role": "tertiary",
+        "displayName": "Ámbar fondo",
+        "canonical": "#fbeed3",
+        "dark": "#3a2c0f",
+        "tonalRamp": [
+          "oklch(15% 0.045 85)",
+          "oklch(26% 0.045 85)",
+          "oklch(37% 0.045 85)",
+          "oklch(48% 0.045 85)",
+          "oklch(59% 0.045 85)",
+          "oklch(70% 0.045 85)",
+          "oklch(82% 0.045 85)",
+          "oklch(95% 0.045 85)"
+        ]
+      },
+      "verdin": {
+        "role": "tertiary",
+        "displayName": "Verdín de vigilancia",
+        "canonical": "#1f7a64",
+        "dark": "#4cc1a2",
+        "tonalRamp": [
+          "oklch(15% 0.09 170)",
+          "oklch(26% 0.09 170)",
+          "oklch(37% 0.09 170)",
+          "oklch(48% 0.09 170)",
+          "oklch(59% 0.09 170)",
+          "oklch(70% 0.09 170)",
+          "oklch(82% 0.09 170)",
+          "oklch(95% 0.09 170)"
+        ]
+      },
+      "verdin-fondo": {
+        "role": "tertiary",
+        "displayName": "Verdín fondo",
+        "canonical": "#dcefe8",
+        "dark": "#12302a",
+        "tonalRamp": [
+          "oklch(15% 0.025 170)",
+          "oklch(26% 0.025 170)",
+          "oklch(37% 0.025 170)",
+          "oklch(48% 0.025 170)",
+          "oklch(59% 0.025 170)",
+          "oklch(70% 0.025 170)",
+          "oklch(82% 0.025 170)",
+          "oklch(95% 0.025 170)"
+        ]
+      },
+      "aviso": {
+        "role": "neutral",
+        "displayName": "Aviso",
+        "canonical": "#14191b",
+        "dark": "#2b3337",
+        "tonalRamp": [
+          "oklch(15% 0.008 220)",
+          "oklch(26% 0.008 220)",
+          "oklch(37% 0.008 220)",
+          "oklch(48% 0.008 220)",
+          "oklch(59% 0.008 220)",
+          "oklch(70% 0.008 220)",
+          "oklch(82% 0.008 220)",
+          "oklch(95% 0.008 220)"
+        ]
+      },
+      "sobre-aviso": {
+        "role": "neutral",
+        "displayName": "Sobre aviso",
+        "canonical": "#f9fbfa",
+        "dark": "#e7ecea",
+        "tonalRamp": [
+          "oklch(15% 0.004 170)",
+          "oklch(26% 0.004 170)",
+          "oklch(37% 0.004 170)",
+          "oklch(48% 0.004 170)",
+          "oklch(59% 0.004 170)",
+          "oklch(70% 0.004 170)",
+          "oklch(82% 0.004 170)",
+          "oklch(95% 0.004 170)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "monumental": {
+        "displayName": "Monumental",
+        "purpose": "La duración de una alarma única en el campo rojo, y el 404."
+      },
+      "lectura-escala": {
+        "displayName": "Lectura de escala",
+        "purpose": "Lectura en odómetro sobre cada escala y en las filas de varias alarmas."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Título de cada pantalla."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Título y causa del campo rojo, estados vacíos, botón grande."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Texto corriente; nombres de nodo y títulos de placa en 600."
+      },
+      "body-sm": {
+        "displayName": "Body pequeño",
+        "purpose": "Estados, ayudas, bitácora, avisos."
+      },
+      "nav": {
+        "displayName": "Navegación",
+        "purpose": "Texto bajo los íconos de la barra inferior."
+      },
+      "rotulo": {
+        "displayName": "Rótulo de placa",
+        "purpose": "Mayúsculas espaciadas en tinta-2, solo para medidas, datos y mandos de instrumentos."
+      }
+    },
+    "shadows": [
+      {
+        "name": "placa",
+        "value": "0 0 0 1px var(--filo), 0 1px 0 1px rgb(var(--sombra) / 0.04), 0 10px 24px -14px rgb(var(--sombra) / 0.22)",
+        "purpose": "Placas montadas: instrumentos, bitácora, formularios, listas, toasts."
+      },
+      {
+        "name": "mando",
+        "value": "0 1px 2px rgb(var(--sombra) / 0.35)",
+        "purpose": "El mando de la palanca."
+      },
+      {
+        "name": "pestana-activa",
+        "value": "0 0 0 1px var(--filo), 0 1px 2px rgb(var(--sombra) / 0.12)",
+        "purpose": "El segmento elegido del selector del historial."
+      },
+      {
+        "name": "sombra",
+        "value": "día 20 30 32 / noche 0 0 0",
+        "purpose": "Triplete RGB de todas las sombras, redefinido por esquema."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-salida",
+        "value": "cubic-bezier(0.23, 1, 0.32, 1)",
+        "purpose": "Salidas y regresos: aguja a cero, ruedas del odómetro, mando de la palanca, entradas, presión."
+      },
+      {
+        "name": "ease-mueve",
+        "value": "cubic-bezier(0.77, 0, 0.175, 1)",
+        "purpose": "El latido de la luz de alarma."
+      },
+      {
+        "name": "latido",
+        "value": "latido 1.2s var(--ease-mueve) infinite (opacidad 1 a 0.3 a 1)",
+        "purpose": "La única animación perpetua: la luz de alarma (solo con motion-safe)."
+      },
+      {
+        "name": "aguja-sube",
+        "value": "1000ms linear",
+        "purpose": "La aguja y el relleno avanzan al ritmo del reloj."
+      },
+      {
+        "name": "aguja-vuelve",
+        "value": "300ms var(--ease-salida)",
+        "purpose": "Regreso a cero al silenciar o reiniciar el contador."
+      },
+      {
+        "name": "odometro",
+        "value": "200ms var(--ease-salida)",
+        "purpose": "Giro de cada rueda de dígito."
+      },
+      {
+        "name": "aparece",
+        "value": "220ms var(--ease-salida); @starting-style opacity 0, translateY(-6px)",
+        "purpose": "Entrada del campo rojo y de los avisos, sin rebote."
+      },
+      {
+        "name": "pulsable",
+        "value": "140ms var(--ease-salida); :active scale(0.97)",
+        "purpose": "Respuesta al presionar de botones y destinos."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "transition-duration y animation-duration 0ms",
+        "purpose": "prefers-reduced-motion: reduce anula todo movimiento."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Botón primario",
+      "kind": "button",
+      "refersTo": "button-primario",
+      "description": "Tecla de tinta para la acción principal de una pantalla o formulario.",
+      "html": "<button class=\"ds-boton-primario\">Entrar</button>",
+      "css": ":host{--suelo:#e4e9e8;--cara:#f9fbfa;--cara-2:#eef2f1;--filo:#c9d2d0;--marca:#8e9a98;--tinta:#14191b;--tinta-2:#4b585c;--tinta-3:#66747a;--alarma:#c42b21;--alarma-campo:#c42b21;--sobre-alarma:#fff;--sobre-alarma-2:#ffe3e0;--ambar:#c07a06;--ambar-tinta:#8a5300;--ambar-fondo:#fbeed3;--verdin:#1f7a64;--verdin-fondo:#dcefe8;--aviso:#14191b;--sobre-aviso:#f9fbfa;--sombra:20 30 32;--ease-salida:cubic-bezier(0.23,1,0.32,1);--ease-mueve:cubic-bezier(0.77,0,0.175,1)} .ds-boton-primario{font-family:Barlow,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 16px;border:0;border-radius:6px;font-size:1rem;font-weight:600;cursor:pointer;transition:transform 140ms var(--ease-salida),background-color 140ms var(--ease-salida),color 140ms var(--ease-salida);background:var(--tinta);color:var(--cara)} .ds-boton-primario:hover{background:color-mix(in oklab,var(--tinta) 90%,transparent)} .ds-boton-primario:focus-visible{outline:2px solid var(--tinta);outline-offset:3px} .ds-boton-primario:active:not(:disabled){transform:scale(0.97)} .ds-boton-primario:disabled{opacity:0.55;cursor:not-allowed}"
+    },
+    {
+      "name": "Botón secundario",
+      "kind": "button",
+      "refersTo": "button-secundario",
+      "description": "Esmalte con filete; acciones secundarias como enviar una prueba.",
+      "html": "<button class=\"ds-boton-secundario\">Enviar una prueba</button>",
+      "css": ":host{--suelo:#e4e9e8;--cara:#f9fbfa;--cara-2:#eef2f1;--filo:#c9d2d0;--marca:#8e9a98;--tinta:#14191b;--tinta-2:#4b585c;--tinta-3:#66747a;--alarma:#c42b21;--alarma-campo:#c42b21;--sobre-alarma:#fff;--sobre-alarma-2:#ffe3e0;--ambar:#c07a06;--ambar-tinta:#8a5300;--ambar-fondo:#fbeed3;--verdin:#1f7a64;--verdin-fondo:#dcefe8;--aviso:#14191b;--sobre-aviso:#f9fbfa;--sombra:20 30 32;--ease-salida:cubic-bezier(0.23,1,0.32,1);--ease-mueve:cubic-bezier(0.77,0,0.175,1)} .ds-boton-secundario{font-family:Barlow,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 16px;border:0;border-radius:6px;font-size:1rem;font-weight:600;cursor:pointer;transition:transform 140ms var(--ease-salida),background-color 140ms var(--ease-salida),color 140ms var(--ease-salida);background:var(--cara);color:var(--tinta);box-shadow:inset 0 0 0 1px var(--filo)} .ds-boton-secundario:hover{background:var(--cara-2)} .ds-boton-secundario:focus-visible{outline:2px solid var(--tinta);outline-offset:3px} .ds-boton-secundario:active:not(:disabled){transform:scale(0.97)} .ds-boton-secundario:disabled{opacity:0.55;cursor:not-allowed}"
+    },
+    {
+      "name": "Botón discreto",
+      "kind": "button",
+      "refersTo": "button-discreto",
+      "description": "Sin fondo, tinta-2; acciones terciarias.",
+      "html": "<button class=\"ds-boton-discreto\">Cerrar sesión</button>",
+      "css": ":host{--suelo:#e4e9e8;--cara:#f9fbfa;--cara-2:#eef2f1;--filo:#c9d2d0;--marca:#8e9a98;--tinta:#14191b;--tinta-2:#4b585c;--tinta-3:#66747a;--alarma:#c42b21;--alarma-campo:#c42b21;--sobre-alarma:#fff;--sobre-alarma-2:#ffe3e0;--ambar:#c07a06;--ambar-tinta:#8a5300;--ambar-fondo:#fbeed3;--verdin:#1f7a64;--verdin-fondo:#dcefe8;--aviso:#14191b;--sobre-aviso:#f9fbfa;--sombra:20 30 32;--ease-salida:cubic-bezier(0.23,1,0.32,1);--ease-mueve:cubic-bezier(0.77,0,0.175,1)} .ds-boton-discreto{font-family:Barlow,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 16px;border:0;border-radius:6px;font-size:1rem;font-weight:600;cursor:pointer;transition:transform 140ms var(--ease-salida),background-color 140ms var(--ease-salida),color 140ms var(--ease-salida);background:transparent;color:var(--tinta-2)} .ds-boton-discreto:hover{background:var(--cara-2);color:var(--tinta)} .ds-boton-discreto:focus-visible{outline:2px solid var(--tinta);outline-offset:3px} .ds-boton-discreto:active:not(:disabled){transform:scale(0.97)} .ds-boton-discreto:disabled{opacity:0.55;cursor:not-allowed}"
+    },
+    {
+      "name": "Campo rojo con Silenciar",
+      "kind": "custom",
+      "refersTo": "campo-alarmas",
+      "description": "La única superficie roja: una alarma, su duración monumental en cifras y Silenciar (botón sobre-alarma grande).",
+      "html": "<section class=\"ds-campo-rojo\"><h2 class=\"ds-campo-rojo__titulo\"><span class=\"ds-campo-rojo__luz\"></span>Alarma · Baño</h2><p class=\"ds-campo-rojo__causa\">Sin movimiento</p><div class=\"ds-campo-rojo__fila\"><span class=\"ds-campo-rojo__cifra\">12:04</span><span class=\"ds-campo-rojo__desde\">sonando desde las 14:05</span></div><button class=\"ds-boton-sobre-alarma\">Silenciar</button></section>",
+      "css": ":host{--suelo:#e4e9e8;--cara:#f9fbfa;--cara-2:#eef2f1;--filo:#c9d2d0;--marca:#8e9a98;--tinta:#14191b;--tinta-2:#4b585c;--tinta-3:#66747a;--alarma:#c42b21;--alarma-campo:#c42b21;--sobre-alarma:#fff;--sobre-alarma-2:#ffe3e0;--ambar:#c07a06;--ambar-tinta:#8a5300;--ambar-fondo:#fbeed3;--verdin:#1f7a64;--verdin-fondo:#dcefe8;--aviso:#14191b;--sobre-aviso:#f9fbfa;--sombra:20 30 32;--ease-salida:cubic-bezier(0.23,1,0.32,1);--ease-mueve:cubic-bezier(0.77,0,0.175,1)} @keyframes ds-latido{0%,100%{opacity:1}50%{opacity:0.3}} .ds-campo-rojo{font-family:Barlow,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;background:var(--alarma-campo);color:var(--sobre-alarma);border-radius:10px;padding:12px 20px 20px} .ds-campo-rojo__titulo{display:flex;align-items:center;gap:10px;margin:0;font-size:1.125rem;line-height:1.5rem;font-weight:600} .ds-campo-rojo__luz{width:10px;height:10px;border-radius:9999px;background:var(--sobre-alarma);animation:ds-latido 1.2s var(--ease-mueve) infinite} .ds-campo-rojo__causa{margin:12px 0 0;font-size:1.125rem;line-height:1.5rem;font-weight:500} .ds-campo-rojo__fila{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin-top:16px} .ds-campo-rojo__cifra{font-family:'Barlow Semi Condensed',Barlow,system-ui,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:0.01em;font-size:3.25rem;line-height:1;font-weight:600} .ds-campo-rojo__desde{font-size:0.875rem;color:var(--sobre-alarma-2)} .ds-boton-sobre-alarma{font-family:Barlow,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 16px;border:0;border-radius:6px;font-size:1rem;font-weight:600;cursor:pointer;transition:transform 140ms var(--ease-salida),background-color 140ms var(--ease-salida),color 140ms var(--ease-salida);margin-top:20px;height:56px;padding:0 24px;min-width:14rem;font-size:1.125rem;background:var(--sobre-alarma);color:var(--alarma-campo)} .ds-boton-sobre-alarma:hover{background:color-mix(in oklab,var(--sobre-alarma) 90%,transparent)} .ds-boton-sobre-alarma:focus-visible{outline:2px solid var(--tinta);outline-offset:3px} .ds-boton-sobre-alarma:active:not(:disabled){transform:scale(0.97)} .ds-boton-sobre-alarma:disabled{opacity:0.55;cursor:not-allowed} @media (prefers-reduced-motion:reduce){.ds-campo-rojo__luz{animation:none}}"
+    },
+    {
+      "name": "Campo de formulario",
+      "kind": "input",
+      "refersTo": "campo",
+      "description": "Rótulo arriba, 48 px, anillo de filete; el error va en tinta con ícono, nunca en rojo.",
+      "html": "<div class=\"ds-campo\"><label class=\"ds-campo__rotulo\" for=\"ds-correo\">Correo</label><input id=\"ds-correo\" class=\"ds-campo__entrada\" aria-invalid=\"true\" value=\"admin@\"><p class=\"ds-campo__error\"><svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"12\" x2=\"12\" y1=\"8\" y2=\"12\"/><line x1=\"12\" x2=\"12.01\" y1=\"16\" y2=\"16\"/></svg>Escribe un correo completo.</p></div>",
+      "css": ":host{--suelo:#e4e9e8;--cara:#f9fbfa;--cara-2:#eef2f1;--filo:#c9d2d0;--marca:#8e9a98;--tinta:#14191b;--tinta-2:#4b585c;--tinta-3:#66747a;--alarma:#c42b21;--alarma-campo:#c42b21;--sobre-alarma:#fff;--sobre-alarma-2:#ffe3e0;--ambar:#c07a06;--ambar-tinta:#8a5300;--ambar-fondo:#fbeed3;--verdin:#1f7a64;--verdin-fondo:#dcefe8;--aviso:#14191b;--sobre-aviso:#f9fbfa;--sombra:20 30 32;--ease-salida:cubic-bezier(0.23,1,0.32,1);--ease-mueve:cubic-bezier(0.77,0,0.175,1)} .ds-campo{font-family:Barlow,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;display:grid;gap:6px;color:var(--tinta)} .ds-campo__rotulo{font-size:0.875rem;font-weight:500} .ds-campo__entrada{font-family:Barlow,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;height:48px;padding:0 12px;font-size:16px;border:0;border-radius:6px;background:var(--cara);color:var(--tinta);box-shadow:inset 0 0 0 1px var(--filo);caret-color:var(--verdin);transition:box-shadow 150ms} .ds-campo__entrada:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--tinta)} .ds-campo__entrada[aria-invalid=true]{box-shadow:inset 0 0 0 2px var(--tinta-2)} .ds-campo__entrada[aria-invalid=true]:focus-visible{box-shadow:inset 0 0 0 2px var(--tinta)} .ds-campo__error{display:flex;align-items:flex-start;gap:6px;margin:0;font-size:0.875rem;font-weight:500;color:var(--tinta)} .ds-campo__error svg{flex-shrink:0;margin-top:2px}"
+    },
+    {
+      "name": "Tira-instrumento con escala calibrada",
+      "kind": "card",
+      "refersTo": "placa",
+      "description": "La firma: placa con luz, nombre y palanca; escala de 20 tramos con escalones al 25/50/75 que se encienden al cruzarlos, último cuarto ámbar, límite rojo, aguja de tinta y lectura en cifras. Debajo, una tira desactivada: rayada.",
+      "html": "<ul class=\"ds-placa\"><li class=\"ds-tira\"><div class=\"ds-tira__cabecera\"><span class=\"ds-luz\"></span><h3 class=\"ds-tira__nombre\">Baño</h3><span class=\"ds-palanca\" role=\"switch\" aria-checked=\"true\" aria-label=\"Vigilar Baño\" tabindex=\"0\"><span class=\"ds-palanca__piloto\"></span><span class=\"ds-palanca__mando\"></span></span></div><div class=\"ds-escala__cabeza\"><span class=\"ds-rotulo\">Sin movimiento</span><span><span class=\"ds-escala__lectura\">09:12</span><span class=\"ds-escala__limite\"> / 15:00</span></span></div><div class=\"ds-escala\" role=\"meter\" aria-valuemin=\"0\" aria-valuemax=\"900\" aria-valuenow=\"552\"><span class=\"ds-marca\" style=\"left:5%\"></span><span class=\"ds-marca\" style=\"left:10%\"></span><span class=\"ds-marca\" style=\"left:15%\"></span><span class=\"ds-marca\" style=\"left:20%\"></span><span class=\"ds-marca ds-marca--escalon ds-marca--cruzada\" style=\"left:25%\"></span><span class=\"ds-marca\" style=\"left:30%\"></span><span class=\"ds-marca\" style=\"left:35%\"></span><span class=\"ds-marca\" style=\"left:40%\"></span><span class=\"ds-marca\" style=\"left:45%\"></span><span class=\"ds-marca ds-marca--escalon ds-marca--cruzada\" style=\"left:50%\"></span><span class=\"ds-marca\" style=\"left:55%\"></span><span class=\"ds-marca\" style=\"left:60%\"></span><span class=\"ds-marca\" style=\"left:65%\"></span><span class=\"ds-marca\" style=\"left:70%\"></span><span class=\"ds-marca ds-marca--escalon\" style=\"left:75%\"></span><span class=\"ds-marca\" style=\"left:80%\"></span><span class=\"ds-marca\" style=\"left:85%\"></span><span class=\"ds-marca\" style=\"left:90%\"></span><span class=\"ds-marca\" style=\"left:95%\"></span><span class=\"ds-escala__pista\"><span class=\"ds-escala__ambar\"></span><span class=\"ds-escala__relleno\"></span></span><span class=\"ds-escala__limite-raya\"></span><span class=\"ds-escala__aguja\"></span></div></li><li class=\"ds-tira ds-rayado\"><div class=\"ds-tira__cabecera\"><span class=\"ds-luz ds-luz--apagada\"></span><h3 class=\"ds-tira__nombre\">Cocina</h3><span class=\"ds-tira__estado\">Desactivado</span></div></li></ul>",
+      "css": ":host{--suelo:#e4e9e8;--cara:#f9fbfa;--cara-2:#eef2f1;--filo:#c9d2d0;--marca:#8e9a98;--tinta:#14191b;--tinta-2:#4b585c;--tinta-3:#66747a;--alarma:#c42b21;--alarma-campo:#c42b21;--sobre-alarma:#fff;--sobre-alarma-2:#ffe3e0;--ambar:#c07a06;--ambar-tinta:#8a5300;--ambar-fondo:#fbeed3;--verdin:#1f7a64;--verdin-fondo:#dcefe8;--aviso:#14191b;--sobre-aviso:#f9fbfa;--sombra:20 30 32;--ease-salida:cubic-bezier(0.23,1,0.32,1);--ease-mueve:cubic-bezier(0.77,0,0.175,1)} .ds-placa{font-family:Barlow,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;background:var(--cara);box-shadow:0 0 0 1px var(--filo),0 1px 0 1px rgb(var(--sombra)/0.04),0 10px 24px -14px rgb(var(--sombra)/0.22);border-radius:10px;list-style:none;margin:0;padding:0;color:var(--tinta);overflow:hidden} .ds-tira{padding:6px 16px 12px} .ds-tira+.ds-tira{border-top:1px solid var(--filo)} .ds-rayado{background-image:repeating-linear-gradient(-45deg,color-mix(in oklab,var(--marca) 34%,transparent) 0 1px,transparent 1px 7px)} .ds-tira__cabecera{display:flex;align-items:center;gap:12px;min-height:44px} .ds-tira__nombre{margin:0;font-size:1rem;font-weight:600} .ds-tira__cabecera>.ds-tira__nombre:nth-last-child(2){flex:1} .ds-tira__estado{flex:1;font-size:0.875rem;color:var(--tinta-2)} .ds-luz{width:10px;height:10px;border-radius:9999px;background:var(--verdin);flex-shrink:0} .ds-luz--apagada{background:transparent;box-shadow:inset 0 0 0 1px var(--marca)} .ds-rotulo{font-family:'Barlow Semi Condensed',Barlow,system-ui,sans-serif;font-size:0.75rem;line-height:1rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--tinta-2);} .ds-escala__cabeza{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-top:8px} .ds-escala__lectura{font-family:'Barlow Semi Condensed',Barlow,system-ui,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:0.01em;font-size:1.375rem;line-height:1;font-weight:600} .ds-escala__limite{font-family:'Barlow Semi Condensed',Barlow,system-ui,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:0.01em;font-size:0.875rem;color:var(--tinta-3)} .ds-escala{position:relative;height:20px;margin-top:2px} .ds-marca{position:absolute;top:0;width:1px;height:4px;transform:translateX(-50%);background:var(--marca);transition:background-color 200ms} .ds-marca--escalon{height:8px} .ds-marca--cruzada{background:var(--tinta)} .ds-escala__pista{position:absolute;left:0;right:0;top:10px;height:8px;border-radius:2px;background:var(--cara-2);box-shadow:inset 0 0 0 1px var(--filo);overflow:hidden} .ds-escala__ambar{position:absolute;top:0;bottom:0;left:75%;right:0;background:var(--ambar-fondo)} .ds-escala__relleno{position:absolute;top:0;bottom:0;left:0;width:61%;background:color-mix(in oklab,var(--tinta) 25%,transparent);transition:width 1000ms linear} .ds-escala__limite-raya{position:absolute;right:0;top:0;width:2px;height:20px;border-radius:9999px;background:var(--alarma)} .ds-escala__aguja{position:absolute;left:61%;top:4px;width:2px;height:16px;margin-left:-1px;border-radius:9999px;background:var(--tinta);transition:left 1000ms linear} .ds-palanca{position:relative;display:inline-flex;align-items:center;width:52px;height:32px;padding:3px;border-radius:6px;background:var(--cara-2);box-shadow:inset 0 0 0 1px var(--tinta-3);cursor:pointer} .ds-palanca:focus-visible{outline:2px solid var(--tinta);outline-offset:3px} .ds-palanca__piloto{position:absolute;left:9px;top:50%;width:3px;height:12px;margin-top:-6px;border-radius:9999px;background:var(--verdin)} .ds-palanca__mando{position:relative;width:26px;height:26px;border-radius:4px;background:var(--tinta);transform:translateX(20px);box-shadow:0 1px 2px rgb(var(--sombra)/0.35);transition:transform 200ms var(--ease-salida),background-color 200ms var(--ease-salida)} .ds-palanca__mando::after{content:'';position:absolute;left:7px;right:7px;top:50%;height:1px;background:color-mix(in oklab,var(--cara) 60%,transparent)} .ds-palanca:active .ds-palanca__mando{transform:translateX(10px)}"
+    },
+    {
+      "name": "Luz piloto",
+      "kind": "custom",
+      "refersTo": "rounded.luz",
+      "description": "Círculo de 10 px con su palabra: vigilando (verdín), alarma (rojo, latido), incierta, apagada.",
+      "html": "<div class=\"ds-luces\"><span class=\"ds-lp\"><i class=\"ds-lp__luz ds-lp--vigilando\"></i>Vigilando</span><span class=\"ds-lp ds-lp--texto-alarma\"><i class=\"ds-lp__luz ds-lp--alarma\"></i>ALARMA</span><span class=\"ds-lp\"><i class=\"ds-lp__luz ds-lp--incierta\"></i>Sin datos</span><span class=\"ds-lp\"><i class=\"ds-lp__luz ds-lp--apagada\"></i>Sin conexión</span></div>",
+      "css": ":host{--suelo:#e4e9e8;--cara:#f9fbfa;--cara-2:#eef2f1;--filo:#c9d2d0;--marca:#8e9a98;--tinta:#14191b;--tinta-2:#4b585c;--tinta-3:#66747a;--alarma:#c42b21;--alarma-campo:#c42b21;--sobre-alarma:#fff;--sobre-alarma-2:#ffe3e0;--ambar:#c07a06;--ambar-tinta:#8a5300;--ambar-fondo:#fbeed3;--verdin:#1f7a64;--verdin-fondo:#dcefe8;--aviso:#14191b;--sobre-aviso:#f9fbfa;--sombra:20 30 32;--ease-salida:cubic-bezier(0.23,1,0.32,1);--ease-mueve:cubic-bezier(0.77,0,0.175,1)} @keyframes ds-latido-lp{0%,100%{opacity:1}50%{opacity:0.3}} .ds-luces{font-family:Barlow,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;display:flex;flex-wrap:wrap;gap:16px;font-size:0.875rem;color:var(--tinta-2)} .ds-lp{display:inline-flex;align-items:center;gap:8px} .ds-lp--texto-alarma{color:var(--alarma);font-weight:600;letter-spacing:0.025em} .ds-lp__luz{width:10px;height:10px;border-radius:9999px;display:inline-block} .ds-lp--vigilando{background:var(--verdin)} .ds-lp--alarma{background:var(--alarma);animation:ds-latido-lp 1.2s var(--ease-mueve) infinite} .ds-lp--incierta{box-shadow:inset 0 0 0 2px var(--tinta-2)} .ds-lp--apagada{box-shadow:inset 0 0 0 1px var(--marca)} @media (prefers-reduced-motion:reduce){.ds-lp--alarma{animation:none}}"
+    },
+    {
+      "name": "Navegación inferior",
+      "kind": "nav",
+      "refersTo": "typography.nav",
+      "description": "Barra inferior del celular: tres destinos de 56 px; el activo en tinta con una aguja corta arriba.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav__destino ds-nav__destino--activo\" href=\"#\"><svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m12 14 4-4\"/><path d=\"M3.34 19a10 10 0 1 1 17.32 0\"/></svg>Tablero</a><a class=\"ds-nav__destino\" href=\"#\"><svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><polyline points=\"12 6 12 12 16 14\"/></svg>Historial</a><a class=\"ds-nav__destino\" href=\"#\"><svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"8\" r=\"5\"/><path d=\"M20 21a8 8 0 0 0-16 0\"/></svg>Perfil</a></nav>",
+      "css": ":host{--suelo:#e4e9e8;--cara:#f9fbfa;--cara-2:#eef2f1;--filo:#c9d2d0;--marca:#8e9a98;--tinta:#14191b;--tinta-2:#4b585c;--tinta-3:#66747a;--alarma:#c42b21;--alarma-campo:#c42b21;--sobre-alarma:#fff;--sobre-alarma-2:#ffe3e0;--ambar:#c07a06;--ambar-tinta:#8a5300;--ambar-fondo:#fbeed3;--verdin:#1f7a64;--verdin-fondo:#dcefe8;--aviso:#14191b;--sobre-aviso:#f9fbfa;--sombra:20 30 32;--ease-salida:cubic-bezier(0.23,1,0.32,1);--ease-mueve:cubic-bezier(0.77,0,0.175,1)} .ds-nav{font-family:Barlow,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;display:flex;background:var(--cara);box-shadow:inset 0 1px 0 var(--filo)} .ds-nav__destino{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;height:56px;font-size:0.8125rem;line-height:1.125rem;font-weight:500;color:var(--tinta-3);text-decoration:none;transition:transform 140ms var(--ease-salida),color 140ms var(--ease-salida)} .ds-nav__destino:hover{color:var(--tinta-2)} .ds-nav__destino:active{transform:scale(0.97)} .ds-nav__destino:focus-visible{outline:2px solid var(--tinta);outline-offset:-3px;border-radius:4px} .ds-nav__destino--activo{color:var(--tinta)} .ds-nav__destino--activo::before{content:'';position:absolute;top:0;width:32px;height:2px;border-radius:9999px;background:var(--tinta)}"
+    },
+    {
+      "name": "Aviso de conexión",
+      "kind": "custom",
+      "refersTo": "aviso-conexion",
+      "description": "Franja de central desconectada (aviso) y su variante leve para el retraso.",
+      "html": "<div class=\"ds-avisos\"><div class=\"ds-aviso\">La central está desconectada desde las 14:05.</div><div class=\"ds-aviso ds-aviso--leve\">Los datos llegan con retraso.</div></div>",
+      "css": ":host{--suelo:#e4e9e8;--cara:#f9fbfa;--cara-2:#eef2f1;--filo:#c9d2d0;--marca:#8e9a98;--tinta:#14191b;--tinta-2:#4b585c;--tinta-3:#66747a;--alarma:#c42b21;--alarma-campo:#c42b21;--sobre-alarma:#fff;--sobre-alarma-2:#ffe3e0;--ambar:#c07a06;--ambar-tinta:#8a5300;--ambar-fondo:#fbeed3;--verdin:#1f7a64;--verdin-fondo:#dcefe8;--aviso:#14191b;--sobre-aviso:#f9fbfa;--sombra:20 30 32;--ease-salida:cubic-bezier(0.23,1,0.32,1);--ease-mueve:cubic-bezier(0.77,0,0.175,1)} .ds-avisos{font-family:Barlow,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;display:grid;gap:8px} .ds-aviso{padding:10px 16px;border-radius:6px;font-size:0.875rem;background:var(--aviso);color:var(--sobre-aviso)} .ds-aviso--leve{background:var(--cara-2);color:var(--tinta-2);box-shadow:inset 0 0 0 1px var(--filo)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Instrumentos de la casa",
+    "overview": "La app es un tablero de medidores domésticos, como el contador del agua o el tablero de breakers. Cada nodo es una tira-instrumento montada sobre un panel: una escala lineal calibrada que dice cuánto falta para la alarma, no solo si sonó, con su luz piloto y su palanca. De día los instrumentos son esmalte blanco sobre acero gris; de noche, grafito sobre casi negro, sin negro puro ni brillo, porque se mira recién despierto.\n\nEl color es señal, no decoración. Rojo, ámbar y verdín tienen cada uno un único trabajo y fuera de él no aparecen; todo lo demás es tinta sobre esmalte. Las cifras son de odómetro (tabulares, en ruedas que giran) y los rótulos son de placa estampada. Lo que no vigila no se distingue solo con un color: va rayado a 45°. La densidad es de herramienta de uso diario en el celular: una columna, tiras apiladas, objetivos táctiles de 44 px y una escala fija de texto, no de afiche.\n\nRechazo confirmado: la cuadrícula de tarjetas con ícono e interruptor de las apps de casa inteligente.",
+    "keyCharacteristics": [
+      "Día esmalte / noche grafito, conmutados solo por `prefers-color-scheme` (también el `theme-color` del navegador: `cara` de cada esquema).",
+      "Escalas calibradas de 20 tramos con escalones al 25, 50 y 75 % que se encienden al cruzarlos.",
+      "Cifras de odómetro en Barlow Semi Condensed tabular; texto en Barlow.",
+      "Un campo rojo a todo el ancho es la única superficie roja.",
+      "Rayado a 45° para todo lo que no vigila.",
+      "Movimiento mecánico y corto; la única animación perpetua es el latido de la luz de alarma."
+    ],
+    "rules": [
+      {
+        "name": "The Solo Alarma Rule",
+        "body": "El rojo es solo de alarma: el campo rojo, la palabra ALARMA, las luces de alarma, la raya del límite y el relleno en el límite. Ningún error, borrado ni validación usa rojo.",
+        "section": "colors"
+      },
+      {
+        "name": "The Último Cuarto Rule",
+        "body": "El ámbar vive solo en el último cuarto de una escala. No hay advertencias ámbar en otro sitio.",
+        "section": "colors"
+      },
+      {
+        "name": "The Verdín Piloto Rule",
+        "body": "El verdín es una señal pequeña de \"vigilando\" (luz, ranura piloto, punto, etiqueta), nunca un relleno grande ni una superficie.",
+        "section": "colors"
+      },
+      {
+        "name": "The Nunca Solo Color Rule",
+        "body": "Cada luz va acompañada de una palabra (\"Vigilando\", \"ALARMA\", \"Sin conexión\"), y lo que no vigila además va rayado.",
+        "section": "colors"
+      },
+      {
+        "name": "The Cifras Rule",
+        "body": "Toda hora, duración o lectura va en cifras tabulares de la semi condensada; las lecturas que cambian van en odómetro.",
+        "section": "typography"
+      },
+      {
+        "name": "The Rótulo De Placa Rule",
+        "body": "El rótulo en mayúsculas espaciadas es solo para nombrar una medida, un dato o un mando de un instrumento. Nunca va encima de un título como antetítulo, ni en tarjetas o pantallas de formulario: cada placa se titula con su propio h2.",
+        "section": "typography"
+      },
+      {
+        "name": "The Montado Rule",
+        "body": "Las superficies están montadas en el panel, no flotan: filete de 1 px primero, sombra corta después. Sin sombras de hover ni elevaciones apiladas.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do usar `alarma` solo para alarma: campo rojo, palabra ALARMA, luz de alarma, raya y relleno del límite.",
+      "Do limitar el ámbar al último cuarto (75–100 %) de una escala.",
+      "Do rayar a 45° todo lo que no vigila (desactivado, sin conexión, esperando, sin datos), además de decirlo en palabras.",
+      "Do acompañar cada luz con una palabra; el color nunca va solo.",
+      "Do mostrar errores de formulario en tinta con un ícono de alerta, junto al campo o al botón que falló.",
+      "Do poner horas, duraciones y lecturas en cifras tabulares, y las que avanzan en odómetro.",
+      "Do mantener 44 px de objetivo táctil y campos a 16 px.",
+      "Do mover las cosas como piezas mecánicas: aguja 1 s lineal al subir y 300 ms `--ease-salida` al bajar; odómetro 200 ms; entradas de 220 ms sin rebote; presión de 140 ms.",
+      "Do respetar `prefers-reduced-motion`: las transiciones y animaciones van a 0 ms."
+    ],
+    "donts": [
+      "Don't usar rojo para errores, borrados o validación.",
+      "Don't usar el verdín como relleno grande, fondo de sección ni color de marca en la interfaz.",
+      "Don't usar ámbar como color de advertencia general.",
+      "Don't poner antetítulos (eyebrows) sobre los títulos; el rótulo de placa es solo para medidas, datos y mandos de instrumentos.",
+      "Don't animar nada en bucle salvo el latido de la luz de alarma; el pulso de la palanca dura solo mientras espera a la central.",
+      "Don't armar una cuadrícula de tarjetas con ícono e interruptor al estilo de casa inteligente.",
+      "Don't usar negro puro ni una franja casi blanca de noche."
+    ]
+  }
+}

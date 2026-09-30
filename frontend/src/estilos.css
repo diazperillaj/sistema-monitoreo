@@ -1,5 +1,257 @@
+/*
+ * Instrumentos de la casa: esmalte blanco sobre acero de día, grafito de noche.
+ * El rojo es solo de alarma; el ámbar, solo del último escalón antes del límite;
+ * el verdín, de lo que está vigilando. Lo que no vigila va rayado.
+ */
 @import "tailwindcss";
+@import "@fontsource/barlow/400.css";
+@import "@fontsource/barlow/500.css";
+@import "@fontsource/barlow/600.css";
+@import "@fontsource/barlow-semi-condensed/500.css";
+@import "@fontsource/barlow-semi-condensed/600.css";
 
 :root {
   color-scheme: light dark;
+
+  /* Día: esmalte */
+  --suelo: #e4e9e8; /* el panel de acero donde van montados los instrumentos */
+  --cara: #f9fbfa; /* la cara esmaltada de cada instrumento */
+  --cara-2: #eef2f1; /* pistas, campos y barras */
+  --filo: #c9d2d0; /* filetes de 1 px */
+  --marca: #8e9a98; /* marcas de la escala */
+  --tinta: #14191b;
+  --tinta-2: #4b585c;
+  --tinta-3: #66747a;
+  --alarma: #c42b21;
+  --alarma-campo: #c42b21;
+  --sobre-alarma: #ffffff;
+  --sobre-alarma-2: #ffe3e0;
+  --ambar: #c07a06; /* gráficos (≥ 3:1) */
+  --ambar-tinta: #8a5300; /* texto (≥ 4.5:1) */
+  --ambar-fondo: #fbeed3;
+  --verdin: #1f7a64;
+  --verdin-fondo: #dcefe8;
+  --aviso: #14191b; /* la franja de "central desconectada" o "sin conexión": tinta invertida */
+  --sobre-aviso: #f9fbfa;
+  --sombra: 20 30 32;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Noche: grafito. Sin negro puro ni brillo: se mira recién despierto */
+    --suelo: #0c0f10;
+    --cara: #151a1c;
+    --cara-2: #1b2124;
+    --filo: #2b3337;
+    --marca: #56636a;
+    --tinta: #e7ecea;
+    --tinta-2: #a9b4b8;
+    --tinta-3: #85929a;
+    --alarma: #ff5b4f;
+    --alarma-campo: #7f1d17;
+    --sobre-alarma: #ffe9e6;
+    --sobre-alarma-2: #ffc9c2;
+    --ambar: #f0b13a;
+    --ambar-tinta: #f2c261;
+    --ambar-fondo: #3a2c0f;
+    --verdin: #4cc1a2;
+    --verdin-fondo: #12302a;
+    --aviso: #2b3337; /* de noche, grafito elevado: nada de franja blanca al despertar */
+    --sobre-aviso: #e7ecea;
+    --sombra: 0 0 0;
+  }
+}
+
+@theme inline {
+  --font-sans: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-cifras: "Barlow Semi Condensed", "Barlow", system-ui, sans-serif;
+
+  --color-suelo: var(--suelo);
+  --color-cara: var(--cara);
+  --color-cara-2: var(--cara-2);
+  --color-filo: var(--filo);
+  --color-marca: var(--marca);
+  --color-tinta: var(--tinta);
+  --color-tinta-2: var(--tinta-2);
+  --color-tinta-3: var(--tinta-3);
+  --color-alarma: var(--alarma);
+  --color-alarma-campo: var(--alarma-campo);
+  --color-sobre-alarma: var(--sobre-alarma);
+  --color-sobre-alarma-2: var(--sobre-alarma-2);
+  --color-ambar: var(--ambar);
+  --color-ambar-tinta: var(--ambar-tinta);
+  --color-ambar-fondo: var(--ambar-fondo);
+  --color-verdin: var(--verdin);
+  --color-verdin-fondo: var(--verdin-fondo);
+  --color-aviso: var(--aviso);
+  --color-sobre-aviso: var(--sobre-aviso);
+
+  /* Escala fija (rem), razón ~1.2: interfaz de uso diario, no de afiche */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.5rem;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.75rem;
+  --text-monumental: 3.25rem;
+  --text-monumental--line-height: 3.25rem;
+
+  --ease-salida: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-mueve: cubic-bezier(0.77, 0, 0.175, 1);
+
+  /* La luz de alarma late; nada más en la app se mueve solo */
+  --animate-latido: latido 1.2s var(--ease-mueve) infinite;
+  @keyframes latido {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.3;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ base del celular */
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+  background: var(--suelo);
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--suelo);
+  color: var(--tinta);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.5;
+  font-feature-settings: "tnum" 0;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+input,
+textarea,
+select {
+  font-size: 16px; /* menos de 16 px y iPhone acerca la página al escribir */
+}
+
+button,
+a,
+[role="button"],
+[role="switch"],
+[role="tab"] {
+  touch-action: manipulation;
+}
+
+button,
+[role="button"],
+[role="switch"],
+[role="tab"] {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* ------------------------------------------------------------------ superficies del navegador */
+::selection {
+  background: color-mix(in oklab, var(--verdin) 28%, transparent);
+  color: var(--tinta);
+}
+
+:focus-visible {
+  outline: 2px solid var(--tinta);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+input,
+textarea {
+  caret-color: var(--verdin);
+}
+
+a {
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--marca) transparent;
+}
+
+/* ------------------------------------------------------------------ piezas del mundo */
+.cifras {
+  font-family: var(--font-cifras);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: 0.01em;
+}
+
+/* Rótulo de placa: la letra estampada bajo cada medidor ("SIN MOVIMIENTO", "CAUDAL") */
+.rotulo {
+  font-family: var(--font-cifras);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tinta-2);
+}
+
+/* Lo que no vigila: rayado a 45°, no solo un color (desactivado, sin conexión, esperando) */
+.rayado {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    color-mix(in oklab, var(--marca) 34%, transparent) 0 1px,
+    transparent 1px 7px
+  );
+}
+
+/* La cara esmaltada donde van montados los instrumentos: filete de 1 px y sombra corta */
+.placa {
+  background: var(--cara);
+  box-shadow:
+    0 0 0 1px var(--filo),
+    0 1px 0 1px rgb(var(--sombra) / 0.04),
+    0 10px 24px -14px rgb(var(--sombra) / 0.22);
+}
+
+/* Entrada de lo que aparece (el campo rojo, un aviso): corta, sin rebote */
+.aparece {
+  transition:
+    opacity 220ms var(--ease-salida),
+    transform 220ms var(--ease-salida);
+  @starting-style {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+.pulsable {
+  transition:
+    transform 140ms var(--ease-salida),
+    background-color 140ms var(--ease-salida),
+    color 140ms var(--ease-salida),
+    opacity 140ms var(--ease-salida);
+}
+
+.pulsable:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
 }

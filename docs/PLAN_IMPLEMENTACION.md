@@ -120,7 +120,7 @@ flowchart LR
 1. Base: cliente tipado (`ErrorApi`, 401 → login), TanStack Query, rutas y guardas, `Layout` y `Login`.
 2. Dominio portado de la app local, con pruebas: `protocolo.ts` y `textos.ts`.
 3. Tiempo real: `useCasaEnVivo` (WS → caché, reconexión y polling de respaldo) y `useAhora`.
-4. Tablero: `TarjetaNodo`, banners, `InterruptorNodo` con confirmación por WS y "Silenciar todas".
+4. Tablero: `Instrumento` (antes `TarjetaNodo`), el campo rojo y los avisos de conexión, `InterruptorNodo` con confirmación por WS y "Silenciar todas".
 5. Historial de alarmas y eventos, con cursor.
 6. Perfil: clave, sesiones, Web Push con la guía de iPhone, y Telegram si está disponible.
 7. PWA completa: `sw.ts` con la acción Silenciar y `pushsubscriptionchange`, manifest, aviso de nueva versión, alertas en primer plano e instalación.

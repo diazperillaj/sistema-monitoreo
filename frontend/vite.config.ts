@@ -22,8 +22,9 @@ export default defineConfig({
         start_url: "/",
         scope: "/",
         display: "standalone",
-        theme_color: "#0f172a",
-        background_color: "#0f172a",
+        // Grafito, el tema de noche: si una alerta despierta a alguien, nada de pantallazo blanco
+        theme_color: "#151a1c",
+        background_color: "#151a1c",
         icons: [
           {
             src: "/icons/icon-192.png",

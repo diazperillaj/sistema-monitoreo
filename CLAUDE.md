@@ -6,12 +6,13 @@ Sistema de monitoreo con ESP32. Solo la app: 3 contenedores (mosquitto, api = Fa
 - Desarrollo: `docker network create alarma_proxy_dev` (una vez) y `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build`. La primera vez, además: `.env` local (ver README), `./scripts/generar_certs_mqtt.sh` y `./scripts/usuario_mqtt.sh` para `backend_api` y `casa-dev`. En este equipo PostgreSQL de desarrollo queda en el 5434 (`PUERTO_DB_DEV`).
 - Python con uv: `cd backend && uv sync`. Pruebas: `uv run pytest -q` (desde F1 usa testcontainers: requiere Docker). Lint: `uv run ruff check . ../tools && uv run ruff format --check . ../tools`
 - Frontend (Node 24): `cd frontend && npm run dev` → http://localhost:5173 (proxy a la API en :8011). Pruebas: `npm test`. Lint: `npm run lint`. TypeScript fijo en ~5.9 (no subir a 7: rompe typescript-eslint y openapi-typescript).
+- Diseño del frontend: DESIGN.md (mundo "Instrumentos de la casa": tokens y reglas; el rojo es solo de alarma) y PRODUCT.md. Los estilos viven en frontend/src/estilos.css; los íconos se generan con `uv run --with pillow python ../tools/generar_iconos.py` (desde backend/).
 - Tipos de la API en el frontend: `uv run python -m app.cli exportar-openapi > ../frontend/openapi.json` y luego `npm run tipos`.
 - Migraciones: desde backend/, contra la base de desarrollo: `DATABASE_URL=postgresql+asyncpg://alarma:<POSTGRES_PASSWORD>@localhost:5434/alarma uv run alembic revision --autogenerate --rev-id <NNNN> -m "..."`, y revisar a mano los índices parciales (§7.3). La API las aplica sola al arrancar.
 - Base de desarrollo: superadmin `admin@ejemplo.com` (clave en `ADMIN_DEV_CLAVE` del `.env`) y casa `casa-dev`, la del simulador.
 - Simulador de central (desde backend/): `uv run python ../tools/simulador_central.py --casa casa-dev --clave <CLAVE_CENTRAL del .env>`; escribe `ayuda` para ver el menú. También lee órdenes por tubería, una por línea (`w <s>` espera), para guionar escenarios.
 - Notificaciones: Web Push (base) + Telegram opcional por usuario (long polling, sin webhook). Con TELEGRAM_BOT_TOKEN vacío el canal se desactiva.
-- Fase actual: F4b (F0 a F4 terminadas; F4b es opcional)
+- Fase actual: F6 (F0 a F5 terminadas; F4b, Telegram, es opcional y sigue pendiente)
 
 ## Cómo trabajar en este repo
 - Antes de cada fase, releer en docs/ARQUITECTURA.md la fase (§14) y las secciones que cita.
