@@ -12,7 +12,7 @@ Sistema de monitoreo con ESP32. Solo la app: 3 contenedores (mosquitto, api = Fa
 - Base de desarrollo: superadmin `admin@ejemplo.com` (clave en `ADMIN_DEV_CLAVE` del `.env`) y casa `casa-dev`, la del simulador.
 - Simulador de central (desde backend/): `uv run python ../tools/simulador_central.py --casa casa-dev --clave <CLAVE_CENTRAL del .env>`; escribe `ayuda` para ver el menú. También lee órdenes por tubería, una por línea (`w <s>` espera), para guionar escenarios.
 - Notificaciones: Web Push (base) + Telegram opcional por usuario (long polling, sin webhook). Con TELEGRAM_BOT_TOKEN vacío el canal se desactiva.
-- Fase actual: F6 (F0 a F5 terminadas; F4b, Telegram, es opcional y sigue pendiente)
+- Fase actual: F7 (F0 a F6 terminadas; F4b, Telegram, es opcional y sigue pendiente)
 
 ## Cómo trabajar en este repo
 - Antes de cada fase, releer en docs/ARQUITECTURA.md la fase (§14) y las secciones que cita.

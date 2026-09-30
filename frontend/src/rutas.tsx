@@ -1,8 +1,9 @@
 /**
- * Tabla de rutas y guardas (§11.2). El tablero carga de una; el historial y el perfil, cuando
- * se abren (React.lazy), para que el tablero pese poco.
+ * Tabla de rutas y guardas (§11.2). El tablero carga de una; lo demás, cuando se abre
+ * (React.lazy), para que el tablero pese poco. La invitación también va diferida: se abre una
+ * sola vez por persona.
  */
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 import { createBrowserRouter, Navigate, Outlet, useLocation, useParams } from "react-router";
 import { mensajeDe } from "./api/cliente";
 import { useYo } from "./api/consultas";
@@ -16,6 +17,14 @@ import Tablero from "./vistas/Tablero";
 const Login = lazy(() => import("./vistas/Login"));
 const Historial = lazy(() => import("./vistas/Historial"));
 const Perfil = lazy(() => import("./vistas/Perfil"));
+const Invitacion = lazy(() => import("./vistas/Invitacion"));
+const Graficas = lazy(() => import("./vistas/Graficas"));
+const Ajustes = lazy(() => import("./vistas/Ajustes"));
+const Miembros = lazy(() => import("./vistas/Miembros"));
+
+function Diferida({ children }: { children: ReactNode }) {
+  return <Suspense fallback={<CargandoVista />}>{children}</Suspense>;
+}
 
 function Arrancando() {
   return (
@@ -88,6 +97,14 @@ export const rutas = [
     ),
   },
   {
+    path: "/invitacion/:token",
+    element: (
+      <Suspense fallback={<Arrancando />}>
+        <Invitacion />
+      </Suspense>
+    ),
+  },
+  {
     element: <RequiereSesion />,
     children: [
       {
@@ -102,19 +119,48 @@ export const rutas = [
               {
                 path: "historial",
                 element: (
-                  <Suspense fallback={<CargandoVista />}>
+                  <Diferida>
                     <Historial />
-                  </Suspense>
+                  </Diferida>
                 ),
+              },
+              {
+                path: "graficas",
+                element: (
+                  <Diferida>
+                    <Graficas />
+                  </Diferida>
+                ),
+              },
+              {
+                element: <RequiereAdmin />,
+                children: [
+                  {
+                    path: "ajustes",
+                    element: (
+                      <Diferida>
+                        <Ajustes />
+                      </Diferida>
+                    ),
+                  },
+                  {
+                    path: "miembros",
+                    element: (
+                      <Diferida>
+                        <Miembros />
+                      </Diferida>
+                    ),
+                  },
+                ],
               },
             ],
           },
           {
             path: "/perfil",
             element: (
-              <Suspense fallback={<CargandoVista />}>
+              <Diferida>
                 <Perfil />
-              </Suspense>
+              </Diferida>
             ),
           },
         ],

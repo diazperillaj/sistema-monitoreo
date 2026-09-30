@@ -164,6 +164,22 @@
           "oklch(95% 0.17 29)"
         ]
       },
+      "grafica-alarma": {
+        "role": "secondary",
+        "displayName": "Rojo de gráfica",
+        "canonical": "#c42b21",
+        "dark": "#f5503f",
+        "tonalRamp": [
+          "oklch(15% 0.19 29)",
+          "oklch(26% 0.19 29)",
+          "oklch(37% 0.19 29)",
+          "oklch(48% 0.19 29)",
+          "oklch(59% 0.19 29)",
+          "oklch(70% 0.19 29)",
+          "oklch(82% 0.19 29)",
+          "oklch(95% 0.19 29)"
+        ]
+      },
       "sobre-alarma": {
         "role": "secondary",
         "displayName": "Sobre alarma",
@@ -515,7 +531,7 @@
     "rules": [
       {
         "name": "The Solo Alarma Rule",
-        "body": "El rojo es solo de alarma: el campo rojo, la palabra ALARMA, las luces de alarma, la raya del límite y el relleno en el límite. Ningún error, borrado ni validación usa rojo.",
+        "body": "El rojo es solo de alarma: el campo rojo, la palabra ALARMA, las luces de alarma, la raya del límite, el relleno en el límite y las barras de alarmas de sensor en Gráficas (`grafica-alarma`). Ningún error, borrado ni validación usa rojo.",
         "section": "colors"
       },
       {
@@ -547,6 +563,11 @@
         "name": "The Montado Rule",
         "body": "Las superficies están montadas en el panel, no flotan: filete de 1 px primero, sombra corta después. Sin sombras de hover ni elevaciones apiladas.",
         "section": "elevation"
+      },
+      {
+        "name": "The Una Medida Rule",
+        "body": "Una gráfica por medida y nunca dos escalas en un eje. Los textos van en tinta, no en el color de la serie; cada gráfica trae su tabla de datos, y donde faltan lecturas la línea se corta en vez de inventar una recta.",
+        "section": "components"
       }
     ],
     "dos": [
@@ -558,7 +579,8 @@
       "Do poner horas, duraciones y lecturas en cifras tabulares, y las que avanzan en odómetro.",
       "Do mantener 44 px de objetivo táctil y campos a 16 px.",
       "Do mover las cosas como piezas mecánicas: aguja 1 s lineal al subir y 300 ms `--ease-salida` al bajar; odómetro 200 ms; entradas de 220 ms sin rebote; presión de 140 ms.",
-      "Do respetar `prefers-reduced-motion`: las transiciones y animaciones van a 0 ms."
+      "Do respetar `prefers-reduced-motion`: las transiciones y animaciones van a 0 ms.",
+      "Do dar a cada medida su propia gráfica: línea de 2 px en tinta con un lavado al 10 %, su tabla de datos y la línea cortada donde faltan lecturas."
     ],
     "donts": [
       "Don't usar rojo para errores, borrados o validación.",
@@ -567,7 +589,8 @@
       "Don't poner antetítulos (eyebrows) sobre los títulos; el rótulo de placa es solo para medidas, datos y mandos de instrumentos.",
       "Don't animar nada en bucle salvo el latido de la luz de alarma; el pulso de la palanca dura solo mientras espera a la central.",
       "Don't armar una cuadrícula de tarjetas con ícono e interruptor al estilo de casa inteligente.",
-      "Don't usar negro puro ni una franja casi blanca de noche."
+      "Don't usar negro puro ni una franja casi blanca de noche.",
+      "Don't poner dos escalas en un mismo eje ni pintar textos con el color de una serie."
     ]
   }
 }

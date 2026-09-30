@@ -37,6 +37,7 @@
   --verdin-fondo: #dcefe8;
   --aviso: #14191b; /* la franja de "central desconectada" o "sin conexión": tinta invertida */
   --sobre-aviso: #f9fbfa;
+  --grafica-alarma: #c42b21; /* barras de alarmas en las gráficas (validada con la de contexto) */
   --sombra: 20 30 32;
 }
 
@@ -63,6 +64,7 @@
   --verdin-fondo: #12302a;
   --aviso: #2b3337; /* de noche, grafito elevado: nada de franja blanca al despertar */
   --sobre-aviso: #e7ecea;
+  --grafica-alarma: #f5503f; /* un paso más oscura que --alarma: misma luminosidad que las demás marcas */
   --sombra: 0 0 0;
 }
 
@@ -96,6 +98,7 @@
   --color-verdin-fondo: var(--verdin-fondo);
   --color-aviso: var(--aviso);
   --color-sobre-aviso: var(--sobre-aviso);
+  --color-grafica-alarma: var(--grafica-alarma);
 
   /* Escala fija (rem), razón ~1.2: interfaz de uso diario, no de afiche */
   --text-xs: 0.8125rem;
@@ -133,6 +136,16 @@ html {
   -webkit-text-size-adjust: 100%;
   overscroll-behavior: none;
   background: var(--suelo);
+  /* Cuando el foco salta a un campo (el primero por corregir), que no quede bajo la barra de
+     arriba ni bajo la navegación de abajo del celular */
+  scroll-padding-top: calc(4.5rem + env(safe-area-inset-top));
+  scroll-padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 48rem) {
+  html {
+    scroll-padding-bottom: 1rem; /* desde md la navegación va arriba */
+  }
 }
 
 body {

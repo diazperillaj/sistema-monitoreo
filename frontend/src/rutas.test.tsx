@@ -1,10 +1,12 @@
 /** Rutas y guardas (§13.5). */
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RequiereAdmin, RequiereMiembro, RequiereSesion, rutas } from "./rutas";
 import { renderizarRutas } from "./test/renderizar";
+import { estadoCasa } from "./test/datos";
 import { API, errorApi, servidor, yoCuidador } from "./test/servidor";
+import { WsFalso } from "./test/wsFalso";
 
 describe("rutas y guardas", () => {
   it("sin sesión, al login con ?volver= a donde iba", async () => {
@@ -65,6 +67,28 @@ describe("rutas y guardas", () => {
     expect(
       await screen.findByRole("heading", { name: "Esta página no existe" }),
     ).toBeInTheDocument();
+  });
+});
+
+describe("vistas de admin, con las rutas reales", () => {
+  beforeEach(() => {
+    WsFalso.reiniciar();
+    vi.stubGlobal("WebSocket", WsFalso);
+    servidor.use(http.get(`${API}/casas/1/estado`, () => HttpResponse.json(estadoCasa())));
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("el cuidador no ve Ajustes y, si escribe la dirección de Miembros, vuelve al tablero", async () => {
+    servidor.use(http.get(`${API}/auth/yo`, () => HttpResponse.json(yoCuidador)));
+    const { router } = renderizarRutas(rutas, "/casa/1/miembros");
+    await waitFor(() => expect(router.state.location.pathname).toBe("/casa/1"));
+    expect((await screen.findAllByRole("link", { name: "Gráficas" })).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("link", { name: "Ajustes" })).not.toBeInTheDocument();
+  });
+
+  it("el admin sí ve Ajustes", async () => {
+    renderizarRutas(rutas, "/casa/1");
+    expect((await screen.findAllByRole("link", { name: "Ajustes" })).length).toBeGreaterThan(0);
   });
 });
 

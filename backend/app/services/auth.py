@@ -148,6 +148,16 @@ async def usuario_actual(request: Request, response: Response, db: Db) -> Usuari
 Actual = Annotated[UsuarioActual, Depends(usuario_actual)]
 
 
+async def usuario_opcional(request: Request, db: AsyncSession) -> UsuarioActual | None:
+    """El usuario de la sesión, o None sin sesión vigente: para rutas públicas que también
+    sirven con sesión, como aceptar una invitación (§8.2)."""
+    token = request.cookies.get(COOKIE)
+    if not token:
+        return None
+    encontrada = await buscar_sesion(db, token, ahora())
+    return a_usuario_actual(*encontrada) if encontrada else None
+
+
 async def rol_en_casa(db: AsyncSession, usuario: UsuarioActual, casa_id: int) -> str | None:
     """El rol efectivo del usuario en la casa, o None si no es miembro (o la casa no existe).
     El superadmin cuenta como admin en todas las casas."""

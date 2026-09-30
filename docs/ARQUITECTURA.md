@@ -1,6 +1,6 @@
 # Sistema de monitoreo doméstico — Arquitectura del backend
 
-> **Versión:** 1.16 · **Fecha:** 30/09/2026 · **Autor:** Juan Pablo (con Claude)
+> **Versión:** 1.17 · **Fecha:** 30/09/2026 · **Autor:** Juan Pablo (con Claude)
 > **Objetivo del documento:** especificación completa para desarrollar el backend y la app web con Claude Code.
 > **Alcance:** backend, infraestructura y frontend. **El firmware de las ESP32 ya existe y NO se modifica**; solo se le cambian valores de configuración (§12.9).
 >
@@ -30,6 +30,8 @@
 > **Cambios en 1.15 (F5):** mundo visual "Instrumentos de la casa" (S15, `DESIGN.md`); componentes con Radix directo y estilos propios, sin la CLI de shadcn, y fuentes Barlow servidas desde el sitio (§3.3); estructura de `frontend/` y nombres de componentes (§11.1, §11.4); el movimiento se muestra solo cuando lo hay y la lectura cruda del gas no se muestra (§11.4); la edad del dato deja de crecer a los 20 s y el sondeo de respaldo no reintenta (§11.3); manifest en grafito e íconos generados por `tools/generar_iconos.py` (§11.5); sonido y vibración con un toque (§11.6); WebSocket de mentira en las pruebas (§13.5).
 >
 > **Cambios en 1.16 (revisión de F5):** modo claro u oscuro elegible por dispositivo, con un botón en la barra superior y "Apariencia" en el perfil, aplicado antes de pintar por `public/tema.js` (§11.6); el peso del JS inicial se mide con `npm run peso`, que suma el archivo principal y los que precarga (§11.6, §11.7, §13.5).
+>
+> **Cambios en 1.17 (F6):** el enlace de invitación se arma con el `Origin` de la petición si está en `ORIGEN_PERMITIDO`, dura 72 h y responde 409 `invitacion_usada`; aceptar sin sesión exige los tres campos y un email con cuenta da 409 `email_en_uso` (§8.2); 409 `ultimo_admin` y eventos de membresía (§8.6); `agregacion` por defecto `5m`, tope de 2100 puntos y forma del resumen por días de Bogotá (§8.5); `mantenimiento` a las 03:00 de Bogotá (§6.2, §7.5); la Invitación carga diferida, Ajustes agrupa Avisos y Miembros, y Gráficas va para todos los miembros (§11.2, §11.4); pruebas de F6 (§13.5).
 
 ---
 
@@ -809,7 +811,7 @@ app/                       # cada carpeta lleva su __init__.py
     ├── detector.py        # FUNCIÓN PURA: (previo, nuevo, alarmas_abiertas) -> transiciones
     ├── eventos_central.py # FUNCIÓN PURA: eventos nuevos por comparación con la lista anterior (§6.4)
     ├── procesador.py      # aplica transiciones: BD, eventos, WS, notificaciones
-    ├── lecturas.py        # muestreo de nodos en línea y consulta agregada con date_bin (§7.4)
+    ├── lecturas.py        # muestreo de nodos en línea (la consulta agregada con date_bin está en api/lecturas.py, §7.4)
     ├── comandos.py        # publicar cmd, predicados, confirmación con el siguiente estado y timeout
     ├── notificador.py     # arma el Aviso, elige destinatarios y canales, despacha en paralelo y recordatorios (§10.1)
     ├── webpush.py         # canal Web Push: pywebpush en threadpool; limpieza de suscripciones muertas
@@ -817,7 +819,8 @@ app/                       # cada carpeta lleva su __init__.py
     ├── telegram_bot.py    # long polling: /start <código>, /estado, /desvincular, botón Silenciar (§10.7)
     ├── ws_hub.py          # conexiones WebSocket por casa y broadcast
     ├── auth.py            # hash de claves, sesiones, dependencias de permisos
-    └── mantenimiento.py   # limpieza por retención (diaria)
+    ├── membresia.py       # textos y eventos de quién entra, cambia de rol o sale; cuántos admins quedan
+    └── mantenimiento.py   # limpieza por retención, cada madrugada (§7.5)
 ```
 
 ### 6.2 Tareas de fondo (arrancan en el `lifespan`)
@@ -830,7 +833,7 @@ app/                       # cada carpeta lleva su __init__.py
 | `comandos_timeout` | Cada 2 s | Marca `sin_confirmar` los comandos pendientes con más de `TIMEOUT_CONFIRMACION_COMANDO_S`. |
 | `muestreo_lecturas` | Al recibir un `estado` en vivo, como máximo 1 por minuto y casa | Guarda temperatura, gas y caudal, solo de nodos `visto` y `enLinea` (§7.2). Los mensajes retenidos no generan lecturas (§6.3). |
 | `telegram_bot` | Continua (solo si hay `TELEGRAM_BOT_TOKEN`) | Al arrancar: `getMe`, `deleteWebhook` y `setMyCommands`. Luego `getUpdates` en bucle (§10.7.2). |
-| `mantenimiento` | Diaria, 03:00 | Retención: `eventos` 180 días, `lecturas` 90 días, sesiones vencidas y códigos de Telegram vencidos. |
+| `mantenimiento` | Diaria, 03:00 (hora de Bogotá) | Retención de §7.5, por lotes: `eventos` 180 días, `lecturas` 90 días, sesiones vencidas, invitaciones usadas o vencidas hace 30 días y (con F4b) códigos de Telegram vencidos. Deja en el log cuántas filas borró de cada tabla. |
 
 ### 6.3 Procesamiento de un mensaje MQTT
 
@@ -1252,7 +1255,7 @@ En SQLAlchemy: `Index(..., unique=True, postgresql_where=text("fin_en IS NULL"),
   SELECT date_bin(:intervalo, medido_en, TIMESTAMPTZ '2000-01-01') AS t, avg(valor) AS valor
   FROM lecturas
   WHERE casa_id = :casa AND nodo_id = :nodo AND metrica = :metrica
-    AND medido_en BETWEEN :desde AND :hasta
+    AND medido_en >= :desde AND medido_en < :hasta   -- [desde, hasta), como los filtros de §8.5
   GROUP BY 1 ORDER BY 1;
   ```
 - **Alarmas abiertas de una casa** (para el detector, §6.4): `SELECT nodo_id, tipo FROM alarmas WHERE casa_id = :c AND fin_en IS NULL`.
@@ -1269,7 +1272,7 @@ En SQLAlchemy: `Index(..., unique=True, postgresql_where=text("fin_en IS NULL"),
 | `codigos_telegram` | Se eliminan 1 día después de vencer o usarse |
 | `alarmas`, `comandos` | Sin límite (volumen bajo) |
 
-La tarea `mantenimiento` (§6.2) borra por lotes (`DELETE ... WHERE ctid IN (SELECT ctid ... LIMIT 5000)`) para no bloquear. El autovacuum por defecto de PostgreSQL basta para este volumen.
+La tarea `mantenimiento` (§6.2) corre cada día a las 03:00 de Bogotá y borra por lotes (`DELETE ... WHERE ctid IN (SELECT ctid ... LIMIT 5000)`), con un commit por lote, para no bloquear. Una invitación cuenta desde `usada_en` o, si no se usó, desde `expira_en`. La regla de `codigos_telegram` se agrega con su tabla, en F4b. El autovacuum por defecto de PostgreSQL basta para este volumen.
 
 ---
 
@@ -1324,11 +1327,17 @@ No hay registro abierto. El admin genera un enlace y lo comparte (por ejemplo, p
 
 | Método | Ruta | Permiso | Cuerpo | Respuesta |
 |---|---|---|---|---|
-| POST | `/casas/{casa_id}/invitaciones` | A | `{rol, email?}` | 201 `{id, url, expira_en}`, con `url = https://<DOMINIO>/invitacion/<token>` |
-| GET | `/casas/{casa_id}/invitaciones` | A | — | Invitaciones vigentes |
-| DELETE | `/casas/{casa_id}/invitaciones/{id}` | A | — | 204 |
-| GET | `/invitaciones/{token}` | pública | — | `{casa_nombre, rol, email?}` · 404 · 410 |
-| POST | `/invitaciones/{token}/aceptar` | pública o sesión | Sin sesión: `{nombre, email, clave}` crea el usuario. Con sesión: `{}` agrega a la casa. | 200 `Usuario` + cookie |
+| POST | `/casas/{casa_id}/invitaciones` | A | `{rol, email?}` | 201 `{id, url, expira_en}`, con `url = <origen>/invitacion/<token>` |
+| GET | `/casas/{casa_id}/invitaciones` | A | — | Invitaciones vigentes: `[{id, rol, email, creada_en, expira_en, creada_por: {id, nombre}\|null}]`, la más nueva primero |
+| DELETE | `/casas/{casa_id}/invitaciones/{id}` | A | — | 204 · 404 si no es de esa casa o ya no existe |
+| GET | `/invitaciones/{token}` | pública | — | `{casa_nombre, rol, email?}` · 404 `no_encontrado` · 409 `invitacion_usada` · 410 `invitacion_vencida` |
+| POST | `/invitaciones/{token}/aceptar` | pública o sesión | Sin sesión: `{nombre, email, clave}` crea el usuario. Con sesión: `{}` agrega a la casa. | 200 `Usuario` + cookie · los mismos 404, 409 y 410 |
+
+- **El enlace** dura 72 horas y sirve una sola vez. Se guarda solo el hash del token (como las sesiones, §12.2): el token completo aparece una única vez, en la respuesta del POST. `<origen>` es el `Origin` de la petición si está en `ORIGEN_PERMITIDO` (así funciona igual en desarrollo y en producción) y, si no, `https://<DOMINIO>`.
+- **Sin sesión**, los tres campos son obligatorios: si falta alguno, 400 `solicitud_invalida` con `campos`. Si el email ya tiene cuenta, 409 `email_en_uso`: la persona entra con esa cuenta y vuelve a abrir el enlace. Al crearla, queda con la sesión abierta.
+- **Con sesión**, quien ya era miembro conserva su rol (el enlace igual queda usado).
+- Aceptar marca `usada_en` y `usada_por`, y deja el evento "Tomás se unió a la casa como cuidador" (origen `usuario`, tipo `info`), que también llega por WebSocket.
+- Límite de 10 por minuto por IP en las dos rutas públicas (§12.4).
 
 ### 8.3 Casas y estado
 
@@ -1379,8 +1388,8 @@ Errores: 400 `solicitud_invalida` (por ejemplo, `sub = 1` fuera de la presencia 
 |---|---|---|---|---|
 | GET | `/casas/{casa_id}/alarmas` | M | `abiertas?:bool, nodo?:int, tipo?, desde?, hasta?, limit≤100, antes_de_id?` | `{items: Alarma[], siguiente: id\|null}` |
 | GET | `/casas/{casa_id}/eventos` | M | `desde?, hasta?, solo_alarmas?:bool, limit≤200, antes_de_id?` | `{items: Evento[], siguiente}` |
-| GET | `/casas/{casa_id}/lecturas` | M | `nodo, metrica, desde, hasta, agregacion? = "1m"\|"5m"\|"1h"` | `[{t, valor}]` (promedio por intervalo) |
-| GET | `/casas/{casa_id}/resumen` | M | `dias=7` | `{alarmas_por_tipo, tiempo_medio_respuesta_s, alarmas_por_dia[]}` |
+| GET | `/casas/{casa_id}/lecturas` | M | `nodo, metrica, desde, hasta, agregacion = "1m"\|"5m"\|"1h"` (por defecto `5m`) | `[{t, valor}]` (promedio por intervalo) |
+| GET | `/casas/{casa_id}/resumen` | M | `dias` de 1 a 90 (por defecto 7) | `{dias, alarmas_por_tipo, tiempo_medio_respuesta_s, alarmas_por_dia: [{dia, sensor, conexion}]}` |
 
 ```jsonc
 // Alarma
@@ -1398,13 +1407,19 @@ Errores: 400 `solicitud_invalida` (por ejemplo, `sub = 1` fuera de la presencia 
 
 Tiempo de respuesta = `fin_en - inicio_en` de las alarmas con `cerrada_por = "usuario"`.
 
+- **Lecturas:** `date_bin` sobre `medido_en` en `[desde, hasta)`, con el valor redondeado a 2 decimales; los intervalos sin lecturas no aparecen (la gráfica corta la línea ahí). Si `hasta ≤ desde` o el rango da más de 2100 puntos (24 h por minuto o 7 días cada 5 minutos), 400 con `campos`.
+- **Resumen:** cuenta días calendario de Bogotá, hoy incluido, y alarmas por su `inicio_en`. `alarmas_por_dia` trae todos los días del periodo, también los que no tuvieron alarmas, y separa las de sensor de las de conexión (`NODO_SIN_CONEXION` y `CENTRAL_DESCONECTADA`). `tiempo_medio_respuesta_s` es `null` si nadie silenció ninguna.
+
 ### 8.6 Miembros
 
 | Método | Ruta | Permiso | Cuerpo |
 |---|---|---|---|
-| GET | `/casas/{casa_id}/miembros` | M | → `[{usuario:{id, nombre, email}, rol, creado_en}]` |
-| PATCH | `/casas/{casa_id}/miembros/{usuario_id}` | A | `{rol}` |
-| DELETE | `/casas/{casa_id}/miembros/{usuario_id}` | A | — (no se puede quitar al último admin: 409) |
+| GET | `/casas/{casa_id}/miembros` | M | → `[{usuario:{id, nombre, email}, rol, creado_en}]`, los admins primero y luego por nombre |
+| PATCH | `/casas/{casa_id}/miembros/{usuario_id}` | A | `{rol}` → `MiembroCasa` |
+| DELETE | `/casas/{casa_id}/miembros/{usuario_id}` | A | — → 204 |
+
+- La casa nunca queda sin admin: bajar de rol o quitar al último da 409 `ultimo_admin`. Los cambios de membresía se hacen con la fila de la casa bloqueada (`SELECT ... FOR UPDATE`), para que dos admins que se bajan a la vez no dejen la casa sin ninguno.
+- Un `usuario_id` que no es miembro de esa casa da 404. Cada cambio deja un evento (origen `usuario`, tipo `info`): "Ana hizo admin a Beto", "Ana dejó a Beto como cuidador", "Ana quitó a Beto de la casa" o "Beto salió de la casa".
 
 ### 8.7 Notificaciones (Web Push y Telegram)
 
@@ -1725,7 +1740,8 @@ frontend/
     ├── api/
     │   ├── tipos.gen.ts    # GENERADO por openapi-typescript. No se edita a mano
     │   ├── cliente.ts      # openapi-fetch: credenciales, errores {codigo, mensaje}, 401 → /login
-    │   └── consultas.ts    # hooks de TanStack Query (useEstadoCasa, useAlarmas, useComando…)
+    │   ├── consultas.ts    # hooks de TanStack Query (useEstadoCasa, useAlarmas, useComando…)
+    │   └── administracion.ts  # F6: invitaciones, miembros, ajustes, lecturas y resumen (aparte: solo las usan vistas diferidas)
     ├── tiempo-real/
     │   ├── useCasaEnVivo.ts      # WebSocket de la casa → caché de TanStack Query (§11.3)
     │   ├── casaActual.ts         # la casa que se mira, su conexión y la edad del dato
@@ -1738,12 +1754,14 @@ frontend/
     │   ├── instrumento.ts  # qué muestra cada nodo (reglas de detalle()): distintivo, escalas, datos, interruptores
     │   ├── momento.ts      # la franja del momento (madrugada, noche o día) según las banderas
     │   ├── conexion.ts     # qué tan al día está lo que se ve (en vivo, retraso, central desconectada…)
+    │   ├── graficas.ts     # huecos donde faltan lecturas, marcas del eje en horas de Bogotá, resumen de una serie
     │   └── tiempo.ts       # horas y duraciones en es-CO, con la hora de Bogotá
     ├── componentes/
-    │   ├── ui/             # Boton, Palanca (Radix Switch), Campo
+    │   ├── ui/             # Boton, Palanca (Radix Switch), Campo, Confirmar (Radix Dialog)
     │   ├── Instrumento.tsx  Escala.tsx  Odometro.tsx  Lampara.tsx  InterruptorNodo.tsx
     │   ├── CampoAlarmas.tsx  FranjaMomento.tsx  BitacoraCentral.tsx  AvisoSinCanal.tsx
-    │   ├── AvisoNuevaVersion.tsx  GuiaInstalacionIOS.tsx
+    │   ├── AvisoNuevaVersion.tsx  GuiaInstalacionIOS.tsx  BotonTema.tsx
+    │   ├── CabeceraAjustes.tsx  # título y pestañas Avisos | Miembros
     │   └── Layout.tsx      # barra superior con la conexión, navegación y la conexión en vivo de la casa
     ├── notificaciones/
     │   ├── webpush.ts      # permiso, suscribir, desuscribir, probar
@@ -1766,19 +1784,20 @@ URLs limpias con `createBrowserRouter`. FastAPI responde `index.html` a cualquie
 | Ruta | Vista | Guarda | Carga | Contenido |
 |---|---|---|---|---|
 | `/login` | Login | — | inmediata | Email y clave. Tras entrar vuelve a `?volver=` |
-| `/invitacion/:token` | Invitación | — | inmediata | Nombre, email y clave (o "Unirme" si ya tiene sesión) |
+| `/invitacion/:token` | Invitación | — | diferida | A qué casa invitan y qué podrá hacer. Nombre, email (lleno si la invitación lo trae) y clave; o "Unirme a la casa" si ya tiene sesión. Un enlace usado, vencido o anulado lo dice y lleva a la entrada |
 | `/` | Casas | sesión | inmediata | Lista de casas. Si hay una sola, redirige a ella |
 | `/casa/:casaId` | **Tablero** | miembro | inmediata | Banner de alarmas, "Silenciar todas", tarjetas por nodo con interruptores, estado de conexión |
 | `/casa/:casaId/historial` | Historial | miembro | diferida | Alarmas (duración, quién silenció) y eventos, con filtros y "cargar más" (cursor) |
-| `/casa/:casaId/graficas` | Gráficas | miembro | diferida | Temperatura, gas y caudal de 24 h y 7 días (Recharts, `isAnimationActive={false}`) |
-| `/casa/:casaId/miembros` | Miembros | admin | diferida | Lista, cambiar rol, quitar, generar invitación con botón "Copiar enlace" |
-| `/casa/:casaId/ajustes` | Ajustes | admin | diferida | Recordatorios y avisos de la casa |
+| `/casa/:casaId/graficas` | Gráficas | miembro | diferida | Alarmas por día de la última semana y temperatura, gas y caudal de 24 h o 7 días (Recharts, `isAnimationActive={false}`), cada una con su tabla de datos |
+| `/casa/:casaId/ajustes` | Ajustes · Avisos | admin | diferida | Nombre de la casa, recordatorios (`recordatorio_min`, `recordatorio_conexion_min`, `minutos_central_caida`) y qué más se avisa. Guarda solo lo que cambió |
+| `/casa/:casaId/miembros` | Ajustes · Miembros | admin | diferida | Lista, cambiar rol, quitar (con confirmación), invitar con un enlace ("Copiar enlace" y "Compartir") y anular los enlaces sin usar |
 | `/perfil` | Perfil | sesión | diferida | Cambiar clave, sesiones abiertas y **notificaciones**: Web Push de este dispositivo y Telegram de la cuenta (§11.4) |
 | `*` | No encontrado | — | inmediata | Enlace al inicio |
 
-- **"Diferida"** = `React.lazy`. Así Recharts y las vistas de admin no pesan en el tablero.
+- **"Diferida"** = `React.lazy`. Así Recharts y las vistas de admin no pesan en el tablero. La Invitación también: cada persona la abre una sola vez, y su pantalla de carga es la misma del arranque.
+- **Navegación:** Tablero, Historial, Gráficas y Perfil para todos; "Ajustes" solo para el admin (y el superadmin). Ajustes agrupa dos pestañas, "Avisos" y "Miembros", con la misma cabecera (`CabeceraAjustes`).
 - **Guardas:** `RequiereSesion` usa `GET /auth/yo` (clave `['yo']`) y, si no hay sesión, redirige a `/login?volver=<ruta>`. `RequiereAdmin` revisa el rol en esa casa; si no es admin, redirige al tablero.
-- **La UI oculta** lo que el rol no permite (por ejemplo, "Miembros" para un cuidador). Aun así, **el backend siempre valida** los permisos (§12.5).
+- **La UI oculta** lo que el rol no permite (por ejemplo, "Ajustes", con Miembros adentro, para un cuidador). Aun así, **el backend siempre valida** los permisos (§12.5).
 
 ### 11.3 Datos y tiempo real
 
@@ -1839,6 +1858,9 @@ URLs limpias con `createBrowserRouter`. FastAPI responde `index.html` a cualquie
 | `AvisoSinCanal` | En el tablero: "Este dispositivo no recibe alertas → Activar" (o por qué: bloqueadas, en pausa, iPhone sin instalar), si no hay Web Push activo en el dispositivo ni Telegram vinculado y activo. Lleva a `/perfil`. |
 | Sección de alertas (en `Perfil`) | **Web Push:** activar (pide permiso **desde un toque**), probar, desactivar; un error queda junto al botón. Pausa de la cuenta (`notif_webpush`). **Telegram:** vincular, pausar/reanudar, probar, desvincular (F4b); se oculta si `telegram.disponible = false`. En iPhone sin instalar, muestra primero `GuiaInstalacionIOS` (§10.5). |
 | `AvisoNuevaVersion` | "Nueva versión disponible → Actualizar" cuando el service worker detecta una actualización (§11.5). |
+| Gráficas (`vistas/Graficas.tsx`) | Una gráfica por medida, nunca dos escalas en un eje: línea de 2 px en tinta con un lavado al 10 %, cuadrícula de un pelo y burbuja con el valor al pasar el dedo. La línea se corta donde faltan lecturas (más de 1,5 intervalos, `dominio/graficas.ts`) en vez de inventar una recta. Arriba de cada una: la última lectura ("Ahora" o "Último, HH:MM"), el máximo y el mínimo; debajo, "Ver los datos" en tabla. Las alarmas por día van en barras apiladas: de sensor en rojo de gráfica (`--grafica-alarma`) y de conexión en gris, con 2 px del color de la placa entre tramos y solo la punta redondeada. Un solo selector de periodo (24 h o 7 días, radios nativos) cambia las tres medidas a la vez. En pantallas anchas, las alarmas quedan fijas a la izquierda y las lecturas van a la derecha. Sin línea de umbral del gas: el del firmware está por calibrar. |
+| `Confirmar` | Diálogo de Radix para lo que no se deshace solo (quitar a alguien, salir de la casa): foco atrapado, Escape cierra y la acción dice qué hace ("Quitar de la casa"). |
+| `CabeceraAjustes` | Título "Ajustes de la casa" y las pestañas Avisos y Miembros (`NavLink`). |
 
 La lógica pura (bits, textos, formato de tiempos) vive en `src/dominio/` y se **porta de la app actual a TypeScript**, con pruebas (§13.5).
 
@@ -2098,7 +2120,11 @@ Con **Vitest + Testing Library**, la API simulada con **MSW** usando los tipos g
 - **`Instrumento` (antes `TarjetaNodo`):** para cada nodo, el distintivo correcto ("ALARMA", "Desactivado", "Sin conexión", "Esperando nodo"), los contadores y los dos interruptores del nodo 4.
 - **Interruptor:** clic → "enviando…" → mensaje WS `comando` `confirmado` (se queda) o `sin_confirmar` (se revierte y avisa). Un 409 muestra el mensaje de la API.
 - **`useCasaEnVivo`:** un mensaje `estado` actualiza la caché. Si se cae el WS, pasa a polling y vuelve al reconectar.
-- **Rutas y guardas:** sin sesión → `/login?volver=…`; un cuidador que entra a `/casa/1/miembros` es redirigido.
+- **Rutas y guardas:** sin sesión → `/login?volver=…`; con las rutas reales, un cuidador que entra a `/casa/1/miembros` vuelve al tablero y no ve "Ajustes" en la navegación.
+- **Invitación:** crear la cuenta y entrar; qué falta, junto a cada campo y con el foco en el primero; `email_en_uso` ofrece entrar con esa cuenta; con sesión, "Unirme a la casa"; un enlace vencido lo dice.
+- **Miembros:** el único admin no se puede bajar ni quitar, y la pantalla dice por qué; quitar pide confirmación y el aviso llega aunque la fila desaparezca (la lista simulada cambia de verdad); cambiar el rol; crear el enlace y copiarlo.
+- **Ajustes:** el PATCH lleva solo lo que cambió; un número fuera de rango se avisa y no deja guardar.
+- **Gráficas:** último, máximo y mínimo de cada medida, la tabla de datos, el estado sin lecturas, el resumen de alarmas y el cambio de periodo (las tres medidas piden `1h` y una semana).
 - **Perfil:** la sección de Telegram se oculta con `disponible: false`, y el flujo de vincular consulta preferencias hasta `vinculado: true`.
 - **Build:** `npm run build` sin errores de tipos. El JS inicial queda en ≤ 150 KB gzip: `npm run peso` lo suma y falla si se pasa.
 - **Humo extremo a extremo (opcional, F5):** Playwright contra el compose de desarrollo con el simulador. Iniciar sesión → ver el tablero → disparar una alarma → silenciarla.

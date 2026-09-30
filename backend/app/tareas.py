@@ -8,6 +8,7 @@ from functools import partial
 
 from fastapi import FastAPI
 
+from app.services.mantenimiento import cada_madrugada
 from app.services.mqtt_ingesta import ingesta
 
 log = logging.getLogger(__name__)
@@ -54,6 +55,8 @@ async def tareas_de_fondo(app: FastAPI) -> AsyncIterator[None]:
             ),
             name="comandos_timeout",
         ),
+        # Retención de §7.5, cada madrugada a las 03:00 de Bogotá
+        asyncio.create_task(cada_madrugada(estado.sesiones), name="mantenimiento"),
     ]
     try:
         yield

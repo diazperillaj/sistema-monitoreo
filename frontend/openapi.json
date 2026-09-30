@@ -1554,6 +1554,892 @@
         }
       }
     },
+    "/api/v1/casas/{casa_id}/lecturas": {
+      "get": {
+        "tags": [
+          "lecturas"
+        ],
+        "summary": "Lecturas",
+        "description": "Promedio por intervalo, del más viejo al más nuevo. Los intervalos sin lecturas (nodo\napagado, central caída) no aparecen: la gráfica muestra el hueco en vez de inventarlo.",
+        "operationId": "lecturas_api_v1_casas__casa_id__lecturas_get",
+        "parameters": [
+          {
+            "name": "casa_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Casa Id"
+            }
+          },
+          {
+            "name": "nodo",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 4,
+              "minimum": 0,
+              "title": "Nodo"
+            }
+          },
+          {
+            "name": "metrica",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "temperatura",
+                "gas",
+                "caudal"
+              ],
+              "type": "string",
+              "title": "Metrica"
+            }
+          },
+          {
+            "name": "desde",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "description": "medido_en ≥ desde",
+              "title": "Desde"
+            },
+            "description": "medido_en ≥ desde"
+          },
+          {
+            "name": "hasta",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "description": "medido_en < hasta",
+              "title": "Hasta"
+            },
+            "description": "medido_en < hasta"
+          },
+          {
+            "name": "agregacion",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "1m",
+                "5m",
+                "1h"
+              ],
+              "type": "string",
+              "default": "5m",
+              "title": "Agregacion"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Punto"
+                  },
+                  "title": "Response Lecturas Api V1 Casas  Casa Id  Lecturas Get"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso u origen inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/casas/{casa_id}/resumen": {
+      "get": {
+        "tags": [
+          "lecturas"
+        ],
+        "summary": "Resumen",
+        "description": "Las alarmas de los últimos `dias` días (hoy incluido, con la hora de Bogotá).",
+        "operationId": "resumen_api_v1_casas__casa_id__resumen_get",
+        "parameters": [
+          {
+            "name": "casa_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Casa Id"
+            }
+          },
+          {
+            "name": "dias",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 90,
+              "minimum": 1,
+              "default": 7,
+              "title": "Dias"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Resumen"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso u origen inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/casas/{casa_id}/miembros": {
+      "get": {
+        "tags": [
+          "miembros"
+        ],
+        "summary": "Listar",
+        "description": "Primero los admins; dentro de cada rol, por nombre.",
+        "operationId": "listar_api_v1_casas__casa_id__miembros_get",
+        "parameters": [
+          {
+            "name": "casa_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Casa Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MiembroCasa"
+                  },
+                  "title": "Response Listar Api V1 Casas  Casa Id  Miembros Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso u origen inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/casas/{casa_id}/miembros/{usuario_id}": {
+      "patch": {
+        "tags": [
+          "miembros"
+        ],
+        "summary": "Cambiar Rol",
+        "operationId": "cambiar_rol_api_v1_casas__casa_id__miembros__usuario_id__patch",
+        "parameters": [
+          {
+            "name": "usuario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Usuario Id"
+            }
+          },
+          {
+            "name": "casa_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Casa Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CambioMiembro"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MiembroCasa"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso u origen inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "miembros"
+        ],
+        "summary": "Quitar",
+        "description": "Deja de ver la casa y de recibir sus alertas. Su cuenta y sus otras casas siguen igual.",
+        "operationId": "quitar_api_v1_casas__casa_id__miembros__usuario_id__delete",
+        "parameters": [
+          {
+            "name": "usuario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Usuario Id"
+            }
+          },
+          {
+            "name": "casa_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Casa Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso u origen inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/casas/{casa_id}/invitaciones": {
+      "post": {
+        "tags": [
+          "invitaciones"
+        ],
+        "summary": "Crear",
+        "description": "Un enlace de un solo uso, vigente 72 horas, para compartir (por ejemplo, por WhatsApp).",
+        "operationId": "crear_api_v1_casas__casa_id__invitaciones_post",
+        "parameters": [
+          {
+            "name": "casa_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Casa Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitacionNueva"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitacionCreada"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso u origen inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "invitaciones"
+        ],
+        "summary": "Vigentes",
+        "description": "Las que todavía se pueden usar, de la más nueva a la más vieja.",
+        "operationId": "vigentes_api_v1_casas__casa_id__invitaciones_get",
+        "parameters": [
+          {
+            "name": "casa_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Casa Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InvitacionVigente"
+                  },
+                  "title": "Response Vigentes Api V1 Casas  Casa Id  Invitaciones Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso u origen inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/casas/{casa_id}/invitaciones/{invitacion_id}": {
+      "delete": {
+        "tags": [
+          "invitaciones"
+        ],
+        "summary": "Anular",
+        "description": "El enlace deja de servir al instante.",
+        "operationId": "anular_api_v1_casas__casa_id__invitaciones__invitacion_id__delete",
+        "parameters": [
+          {
+            "name": "invitacion_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Invitacion Id"
+            }
+          },
+          {
+            "name": "casa_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Casa Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso u origen inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/invitaciones/{token}": {
+      "get": {
+        "tags": [
+          "invitaciones"
+        ],
+        "summary": "Ver",
+        "description": "A qué casa y con qué rol invita el enlace. Responde 410 si venció.",
+        "operationId": "ver_api_v1_invitaciones__token__get",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitacionPublica"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Demasiados intentos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/invitaciones/{token}/aceptar": {
+      "post": {
+        "tags": [
+          "invitaciones"
+        ],
+        "summary": "Aceptar",
+        "description": "Sin sesión, crea la cuenta con `{nombre, email, clave}`, la une a la casa y entrega la\ncookie. Con sesión, une a la casa a quien ya tiene cuenta (el cuerpo va vacío).",
+        "operationId": "aceptar_api_v1_invitaciones__token__aceptar_post",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AceptarInvitacion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Usuario"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso u origen inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Demasiados intentos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/push/clave-publica": {
       "get": {
         "tags": [
@@ -1878,6 +2764,51 @@
   },
   "components": {
     "schemas": {
+      "AceptarInvitacion": {
+        "properties": {
+          "nombre": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nombre"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "email"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "clave": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clave"
+          }
+        },
+        "type": "object",
+        "title": "AceptarInvitacion",
+        "description": "Sin sesión: nombre, email y clave crean la cuenta. Con sesión: el cuerpo va vacío."
+      },
       "Ajustes": {
         "properties": {
           "recordatorio_min": {
@@ -2035,6 +2966,30 @@
         ],
         "title": "Alarma"
       },
+      "AlarmasDelDia": {
+        "properties": {
+          "dia": {
+            "type": "string",
+            "format": "date",
+            "title": "Dia"
+          },
+          "sensor": {
+            "type": "integer",
+            "title": "Sensor"
+          },
+          "conexion": {
+            "type": "integer",
+            "title": "Conexion"
+          }
+        },
+        "type": "object",
+        "required": [
+          "dia",
+          "sensor",
+          "conexion"
+        ],
+        "title": "AlarmasDelDia"
+      },
       "BajaSuscripcion": {
         "properties": {
           "endpoint": {
@@ -2157,6 +3112,23 @@
           "clave_nueva"
         ],
         "title": "CambioClave"
+      },
+      "CambioMiembro": {
+        "properties": {
+          "rol": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "cuidador"
+            ],
+            "title": "Rol"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rol"
+        ],
+        "title": "CambioMiembro"
       },
       "CambioPreferencias": {
         "properties": {
@@ -2683,6 +3655,151 @@
         "title": "EventoCentral",
         "description": "Una entrada de la bitácora de la central. No tiene id (§4.3)."
       },
+      "InvitacionCreada": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "expira_en": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expira En"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "url",
+          "expira_en"
+        ],
+        "title": "InvitacionCreada"
+      },
+      "InvitacionNueva": {
+        "properties": {
+          "rol": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "cuidador"
+            ],
+            "title": "Rol"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "email"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rol"
+        ],
+        "title": "InvitacionNueva"
+      },
+      "InvitacionPublica": {
+        "properties": {
+          "casa_nombre": {
+            "type": "string",
+            "title": "Casa Nombre"
+          },
+          "rol": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "cuidador"
+            ],
+            "title": "Rol"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          }
+        },
+        "type": "object",
+        "required": [
+          "casa_nombre",
+          "rol",
+          "email"
+        ],
+        "title": "InvitacionPublica",
+        "description": "Lo que ve quien abre el enlace, sin sesión."
+      },
+      "InvitacionVigente": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "rol": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "cuidador"
+            ],
+            "title": "Rol"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "creada_en": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Creada En"
+          },
+          "expira_en": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expira En"
+          },
+          "creada_por": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UsuarioBreve"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "rol",
+          "email",
+          "creada_en",
+          "expira_en",
+          "creada_por"
+        ],
+        "title": "InvitacionVigente"
+      },
       "Login": {
         "properties": {
           "email": {
@@ -2703,6 +3820,33 @@
           "clave"
         ],
         "title": "Login"
+      },
+      "MiembroCasa": {
+        "properties": {
+          "usuario": {
+            "$ref": "#/components/schemas/PersonaMiembro"
+          },
+          "rol": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "cuidador"
+            ],
+            "title": "Rol"
+          },
+          "creado_en": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Creado En"
+          }
+        },
+        "type": "object",
+        "required": [
+          "usuario",
+          "rol",
+          "creado_en"
+        ],
+        "title": "MiembroCasa"
       },
       "NodoCentral": {
         "properties": {
@@ -2868,6 +4012,29 @@
         ],
         "title": "PaginaEventos"
       },
+      "PersonaMiembro": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nombre",
+          "email"
+        ],
+        "title": "PersonaMiembro"
+      },
       "Preferencias": {
         "properties": {
           "webpush": {
@@ -2980,6 +4147,25 @@
         ],
         "title": "Prueba"
       },
+      "Punto": {
+        "properties": {
+          "t": {
+            "type": "string",
+            "format": "date-time",
+            "title": "T"
+          },
+          "valor": {
+            "type": "number",
+            "title": "Valor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "t",
+          "valor"
+        ],
+        "title": "Punto"
+      },
       "ResultadoPrueba": {
         "properties": {
           "webpush": {
@@ -2997,6 +4183,47 @@
           "telegram"
         ],
         "title": "ResultadoPrueba"
+      },
+      "Resumen": {
+        "properties": {
+          "dias": {
+            "type": "integer",
+            "title": "Dias"
+          },
+          "alarmas_por_tipo": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Alarmas Por Tipo"
+          },
+          "tiempo_medio_respuesta_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tiempo Medio Respuesta S"
+          },
+          "alarmas_por_dia": {
+            "items": {
+              "$ref": "#/components/schemas/AlarmasDelDia"
+            },
+            "type": "array",
+            "title": "Alarmas Por Dia"
+          }
+        },
+        "type": "object",
+        "required": [
+          "dias",
+          "alarmas_por_tipo",
+          "tiempo_medio_respuesta_s",
+          "alarmas_por_dia"
+        ],
+        "title": "Resumen"
       },
       "ResumenCasa": {
         "properties": {

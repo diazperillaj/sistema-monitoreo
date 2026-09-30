@@ -12,6 +12,7 @@ import argparse
 import asyncio
 import getpass
 import json
+import logging
 import os
 import re
 import secrets
@@ -101,9 +102,17 @@ async def reset_clave(sesiones: Sesiones, email: str) -> str:
 
 
 def exportar_openapi() -> str:
-    """El contrato de la API para el frontend (§11.7), sin levantar el servidor."""
+    """El contrato de la API para el frontend (§11.7), sin levantar el servidor.
+
+    Sin registros mientras se arma la app: los logs van a la salida estándar, y un aviso (por
+    ejemplo, "Web Push desactivado" sin claves VAPID) terminaría dentro de openapi.json."""
     settings = Settings(database_url=os.environ.get("DATABASE_URL") or URL_SOLO_ESQUEMA)
-    return json.dumps(create_app(settings).openapi(), ensure_ascii=False, indent=2) + "\n"
+    logging.disable(logging.CRITICAL)
+    try:
+        esquema = create_app(settings).openapi()
+    finally:
+        logging.disable(logging.NOTSET)
+    return json.dumps(esquema, ensure_ascii=False, indent=2) + "\n"
 
 
 def pedir_clave() -> str:

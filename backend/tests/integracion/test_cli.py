@@ -92,6 +92,18 @@ def test_exportar_openapi() -> None:
     assert '"422"' not in json.dumps(esquema["paths"])  # los errores de validación son 400 (§8)
 
 
+def test_exportar_openapi_escribe_solo_el_json(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Sin claves VAPID la app avisa en el log; ese aviso no puede colarse en openapi.json."""
+    monkeypatch.delenv("VAPID_CLAVE_PUBLICA", raising=False)
+    monkeypatch.delenv("VAPID_CLAVE_PRIVADA", raising=False)
+    assert main(["exportar-openapi"]) == 0
+    salida = capsys.readouterr().out
+    assert salida.startswith("{")
+    assert json.loads(salida)["openapi"].startswith("3.")
+
+
 def test_main_termina_con_codigo_1_ante_un_error(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

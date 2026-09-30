@@ -12,6 +12,7 @@ colors:
   tinta-3: "#66747a"
   alarma: "#c42b21"
   alarma-campo: "#c42b21"
+  grafica-alarma: "#c42b21"
   sobre-alarma: "#ffffff"
   sobre-alarma-2: "#ffe3e0"
   ambar: "#c07a06"
@@ -179,7 +180,7 @@ Neutros de acero y esmalte con tres señales de un solo uso cada una. Los valore
 - **Tinta de grafito** (`tinta`): texto principal, botón primario, aguja de la escala, escalones cruzados, marca de pestaña activa, anillo de foco. El recorrido de la escala es esta misma tinta al 25 %. De noche es blanco hueso.
 
 ### Secondary
-- **Rojo de señal** (`alarma`, `alarma-campo`, `sobre-alarma`, `sobre-alarma-2`): solo alarma. `alarma` pinta la luz de alarma, la palabra ALARMA y el texto de alarma de un instrumento, la lectura y el relleno en el límite, la raya del límite al final de cada escala y el punto de alarma sobre "Tablero" en la navegación. `alarma-campo` es el fondo del campo rojo y de la franja "alarma fuera del tablero"; de noche baja a un rojo oscuro para no encandilar. `sobre-alarma` y `sobre-alarma-2` son el texto y el texto secundario encima.
+- **Rojo de señal** (`alarma`, `alarma-campo`, `sobre-alarma`, `sobre-alarma-2`): solo alarma. `alarma` pinta la luz de alarma, la palabra ALARMA y el texto de alarma de un instrumento, la lectura y el relleno en el límite, la raya del límite al final de cada escala y el punto de alarma sobre "Tablero" en la navegación. `alarma-campo` es el fondo del campo rojo y de la franja "alarma fuera del tablero"; de noche baja a un rojo oscuro para no encandilar. `sobre-alarma` y `sobre-alarma-2` son el texto y el texto secundario encima. `grafica-alarma` pinta las barras de alarmas de sensor en Gráficas; de noche sube a `#f5503f`, validado contra la placa oscura junto al gris `tinta-3` de las de conexión.
 
 ### Tertiary
 - **Ámbar de último tramo** (`ambar`, `ambar-tinta`, `ambar-fondo`): solo el último cuarto de una escala. `ambar-fondo` tiñe la pista del 75 al 100 %; `ambar` es el relleno cuando la lectura entra ahí (gráfico, ≥ 3:1); `ambar-tinta` es la lectura en cifras en ese tramo (texto, ≥ 4.5:1).
@@ -195,7 +196,7 @@ Neutros de acero y esmalte con tres señales de un solo uso cada una. Los valore
 - **Aviso** (`aviso`, `sobre-aviso`): la franja de "central desconectada" o "sin conexión": tinta invertida de día, grafito elevado de noche (nunca una franja casi blanca a oscuras). El retraso usa la variante leve en `cara-2` con filete.
 
 ### Named Rules
-**The Solo Alarma Rule.** El rojo es solo de alarma: el campo rojo, la palabra ALARMA, las luces de alarma, la raya del límite y el relleno en el límite. Ningún error, borrado ni validación usa rojo.
+**The Solo Alarma Rule.** El rojo es solo de alarma: el campo rojo, la palabra ALARMA, las luces de alarma, la raya del límite, el relleno en el límite y las barras de alarmas de sensor en Gráficas (`grafica-alarma`). Ningún error, borrado ni validación usa rojo.
 
 **The Último Cuarto Rule.** El ámbar vive solo en el último cuarto de una escala. No hay advertencias ámbar en otro sitio.
 
@@ -272,10 +273,11 @@ Teclas de aparato: responden al presionar (escala 0.97 en 140 ms), y cada una no
 ### Inputs / Fields
 - **Style:** 48 px de alto, esmalte, anillo interno de filete, 6 px; rótulo arriba en 0.875rem 500 (no rótulo de placa).
 - **Focus:** anillo de 2 px de tinta.
-- **Error / Disabled:** el error va en tinta 500 con un ícono de alerta y el anillo sube a 2 px de `tinta-2`; nunca en rojo. La validación es por campo y el botón de enviar sigue habilitado. Deshabilitado al 55 %. Las claves llevan un botón de mostrar de 48 px.
+- **Error / Disabled:** el error va en tinta 500 con un ícono de alerta, debajo de la ayuda, y el anillo sube a 2 px de `tinta-2`; nunca en rojo. La validación es por campo y el botón de enviar sigue habilitado: al enviar con algo por corregir, no se envía y el foco va al primer campo que falla. La única excepción es un formulario de ajustes sin cambios: "Guardar cambios" queda deshabilitado y lo dice al lado ("Sin cambios por guardar."). Deshabilitado al 55 %. Las claves llevan un botón de mostrar de 48 px.
+- **Minutos:** campo angosto de cifras (96 px, alineado a la derecha) con "min" al lado; la frase de ayuda dice qué cambia en la casa.
 
 ### Navigation
-Celular: barra inferior de esmalte con filete arriba, tres destinos de 56 px (ícono 20 px + texto 0.8125rem); el activo en tinta con una aguja corta de 2 × 32 px arriba, los demás en `tinta-3`. Desde `md`: botones de 44 px en la barra superior, el activo con fondo `cara-2`. Si hay alarma y no se está en el tablero, un punto rojo con anillo de esmalte sobre "Tablero" y, arriba del contenido, la franja roja "Alarma: …  Ver tablero".
+Celular: barra inferior de esmalte con filete arriba, destinos de 56 px (ícono 20 px + texto 0.8125rem): Tablero, Historial, Gráficas y Perfil, y Ajustes solo para el admin; el activo en tinta con una aguja corta de 2 × 32 px arriba, los demás en `tinta-3`. Desde `md`: botones de 44 px en la barra superior, el activo con fondo `cara-2`; entre `md` y `lg` solo el ícono (el nombre queda para lectores de pantalla y en el `title`). Si hay alarma y no se está en el tablero, un punto rojo con anillo de esmalte sobre "Tablero" y, arriba del contenido, la franja roja "Alarma: …  Ver tablero".
 
 ### Avisos de conexión
 Franja de 0.875rem que entra con `aparece`: `aviso` con `sobre-aviso` cuando la central está desconectada o no hay conexión; la variante leve (`cara-2`, `tinta-2`, filete) cuando solo hay retraso.
@@ -295,6 +297,18 @@ Palanca de breaker de 52 × 32 px: pista sin relleno en `cara-2` con filete (que
 ### Campo rojo
 La única superficie roja: a todo el ancho, luz `sobre-alarma` latiendo, "Alarma · Nodo", la causa, la duración en cifras monumentales, "sonando desde las HH:MM" y "Silenciar". Con varias alarmas, una fila por nodo (nombre, causa, lectura en odómetro, "Silenciar") separada por filetes `sobre-alarma` al 25 %, y "Silenciar todas". Entra en 220 ms (opacidad y 6 px desde arriba) con `@starting-style`.
 
+### Selector segmentado
+Una pista `cara-2` con filete y 4 px de aire; cada opción es de 44 px, en `tinta-2` 600, y la elegida sube a esmalte con el filete y una sombra corta. Son radios nativos escondidos (las flechas del teclado funcionan solas) o, en Ajustes, las pestañas Avisos y Miembros como enlaces. Se usa para Apariencia, el periodo de las gráficas y las pestañas de Ajustes.
+
+### Opciones en tarjeta
+Para elegir entre pocas opciones que necesitan explicarse (el rol al invitar): cada una es una fila de 8 px de radio con su radio nativo, el nombre en 500 y una frase de lo que permite. La elegida lleva fondo `cara-2` y anillo `tinta-3`; las demás, anillo de filete.
+
+### Diálogo de confirmación
+Solo para lo que no se deshace solo (quitar a alguien, salir de la casa). Una placa que en el celular sale abajo, sobre la zona del pulgar, y en pantallas anchas al centro; velo de tinta al 30 %. Título como pregunta ("¿Quitar a Tomás de la casa?"), una frase de qué pasará, **Cancelar** discreto y la acción en primario con su nombre completo ("Quitar de la casa"). Foco atrapado y Escape cierra.
+
+### Gráficas
+Cada medida en su placa: título, una frase de qué mide, y arriba de la gráfica la última lectura con su rótulo de placa y la cifra en 1.25rem 600, el máximo y el mínimo; en una placa angosta la última va sola en su línea y los otros dos debajo. La línea es de 2 px en tinta con un lavado de tinta al 10 %; cuadrícula horizontal de filete de 1 px; ejes en cifras de 12 px `tinta-3`, sin rayitas. Al pasar el dedo, una línea vertical `tinta-3` y una burbuja de placa con el valor primero y la hora debajo. Donde faltan lecturas, la línea se corta. Las alarmas por día van en barras apiladas de hasta 24 px: sensor en `grafica-alarma`, conexión en `tinta-3`, 2 px de esmalte entre tramos y solo la punta de la pila redondeada (4 px), con leyenda arriba. Cada placa termina en "Ver los datos": la serie en una tabla. En pantallas anchas, las alarmas quedan fijas a la izquierda y las lecturas van a la derecha, una debajo de otra para que la misma hora caiga en el mismo lugar. Sin animación de entrada: los datos aparecen quietos.
+
 ### Tira-instrumento
 Una sola fila de cabecera de 44 px: luz, nombre, la palabra de estado solo cuando no está vigilando, la placa "Movimiento ahora" y la palanca. Debajo, la escala principal, la fila de datos con rótulo de placa y, en el nodo con presencia, el mando del sub-instrumento con su rótulo y su escala. "Vigilando" lo dicen la luz y la palanca; en palabras solo va lo que no es normal. Desactivada, sin conexión, esperando o sin datos porque la central no está en línea: rayada.
 
@@ -310,6 +324,7 @@ Una sola fila de cabecera de 44 px: luz, nombre, la palabra de estado solo cuand
 - **Do** mantener 44 px de objetivo táctil y campos a 16 px.
 - **Do** mover las cosas como piezas mecánicas: aguja 1 s lineal al subir y 300 ms `--ease-salida` al bajar; odómetro 200 ms; entradas de 220 ms sin rebote; presión de 140 ms.
 - **Do** respetar `prefers-reduced-motion`: las transiciones y animaciones van a 0 ms.
+- **Do** dar a cada medida su propia gráfica: línea de 2 px en tinta con un lavado al 10 %, su tabla de datos y la línea cortada donde faltan lecturas.
 
 ### Don't:
 - **Don't** usar rojo para errores, borrados o validación.
@@ -319,3 +334,4 @@ Una sola fila de cabecera de 44 px: luz, nombre, la palabra de estado solo cuand
 - **Don't** animar nada en bucle salvo el latido de la luz de alarma; el pulso de la palanca dura solo mientras espera a la central.
 - **Don't** armar una cuadrícula de tarjetas con ícono e interruptor al estilo de casa inteligente.
 - **Don't** usar negro puro ni una franja casi blanca de noche.
+- **Don't** poner dos escalas en un mismo eje ni pintar textos con el color de una serie.

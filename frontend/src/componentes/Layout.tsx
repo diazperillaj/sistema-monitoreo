@@ -3,7 +3,16 @@
  * navegación (abajo en el celular, arriba en pantallas anchas) y la conexión en vivo de la casa
  * que se está mirando, que sigue abierta al pasar al historial o al perfil.
  */
-import { Gauge, History, UserRound, Volume2, VolumeOff, type LucideIcon } from "lucide-react";
+import {
+  ChartLine,
+  Gauge,
+  History,
+  SlidersHorizontal,
+  UserRound,
+  Volume2,
+  VolumeOff,
+  type LucideIcon,
+} from "lucide-react";
 import { useEffect } from "react";
 import { Link, NavLink, Outlet, useMatch } from "react-router";
 import { toast } from "sonner";
@@ -76,24 +85,31 @@ interface Destino {
   fin?: boolean;
 }
 
-function destinos(casaId: number | null): Destino[] {
+/** Ajustes (avisos y miembros) solo para el admin: al cuidador ni se le muestra (§11.2). */
+function destinos(casaId: number | null, admin: boolean): Destino[] {
   const casa =
     casaId === null
       ? []
       : [
           { a: `/casa/${casaId}`, texto: "Tablero", Icono: Gauge, fin: true },
           { a: `/casa/${casaId}/historial`, texto: "Historial", Icono: History },
+          { a: `/casa/${casaId}/graficas`, texto: "Gráficas", Icono: ChartLine },
+          ...(admin
+            ? [{ a: `/casa/${casaId}/ajustes`, texto: "Ajustes", Icono: SlidersHorizontal }]
+            : []),
         ];
   return [...casa, { a: "/perfil", texto: "Perfil", Icono: UserRound }];
 }
 
 function Navegacion({
   casaId,
+  admin,
   alarma,
   className,
   enBarra = false,
 }: {
   casaId: number | null;
+  admin: boolean;
   alarma: boolean;
   className?: string;
   enBarra?: boolean;
@@ -101,16 +117,17 @@ function Navegacion({
   return (
     <nav aria-label="Secciones" className={className}>
       <ul className={cn("flex", enBarra ? "gap-1" : "")}>
-        {destinos(casaId).map(({ a, texto, Icono, fin }) => (
+        {destinos(casaId, admin).map(({ a, texto, Icono, fin }) => (
           <li key={a} className={enBarra ? "" : "flex-1"}>
             <NavLink
               to={a}
               end={fin}
+              title={enBarra ? texto : undefined}
               className={({ isActive }) =>
                 cn(
                   "pulsable relative flex items-center justify-center font-medium",
                   enBarra
-                    ? "h-11 gap-2 rounded-[6px] px-3 text-sm hover:bg-cara-2"
+                    ? "h-11 min-w-11 gap-2 rounded-[6px] px-3 text-sm hover:bg-cara-2"
                     : "h-14 flex-col gap-0.5 text-xs",
                   isActive ? "text-tinta" : "text-tinta-3",
                   // La marca de la pestaña activa: una aguja corta, como en la escala
@@ -130,7 +147,8 @@ function Navegacion({
                   />
                 )}
               </span>
-              {texto}
+              {/* En la barra de arriba, entre md y lg solo caben los íconos */}
+              <span className={enBarra ? "sr-only lg:not-sr-only" : undefined}>{texto}</span>
               {alarma && fin && <span className="sr-only"> (hay una alarma)</span>}
             </NavLink>
           </li>
@@ -180,6 +198,7 @@ export function Layout() {
   const yo = useYo().data; // RequiereSesion ya lo cargó
   const coincide = useMatch("/casa/:casaId/*");
   const enTablero = useMatch("/casa/:casaId") !== null;
+  const enGraficas = useMatch("/casa/:casaId/graficas") !== null;
 
   const enRuta = casaEnRuta(yo, coincide?.params.casaId);
   const casaId = enRuta ?? (yo ? casaPorDefecto(yo) : null);
@@ -198,6 +217,8 @@ export function Layout() {
     yo?.casas.find((c) => c.id === casaId)?.nombre ??
     "Monitoreo del hogar";
   const variasCasas = (casas?.length ?? yo?.casas.length ?? 0) > 1;
+  const admin =
+    !!yo?.usuario.es_superadmin || yo?.casas.find((c) => c.id === casaId)?.rol === "admin";
 
   return (
     <ContextoCasa value={{ casaId, conexion, sonido }}>
@@ -216,6 +237,7 @@ export function Layout() {
             </div>
             <Navegacion
               casaId={casaId}
+              admin={admin}
               alarma={nodosEnAlarma.length > 0 && !enTablero}
               enBarra
               className="hidden md:block"
@@ -236,7 +258,8 @@ export function Layout() {
         <main
           className={cn(
             "mx-auto w-full max-w-2xl flex-1 space-y-4 px-4 pt-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-12",
-            enTablero && "lg:max-w-6xl",
+            // El tablero y las gráficas usan el ancho del escritorio: van en dos columnas
+            (enTablero || enGraficas) && "lg:max-w-6xl",
           )}
         >
           {casaId !== null && <AvisoConexion situacion={envivo.situacion} />}
@@ -248,6 +271,7 @@ export function Layout() {
 
         <Navegacion
           casaId={casaId}
+          admin={admin}
           alarma={nodosEnAlarma.length > 0 && !enTablero}
           className="fixed inset-x-0 bottom-0 z-20 border-t border-filo bg-cara pb-[env(safe-area-inset-bottom)] md:hidden"
         />

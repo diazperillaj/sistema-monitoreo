@@ -4,7 +4,7 @@ Qué hacer y qué deberías ver para comprobar cada fase con tus propios ojos, e
 
 Se prueba con estas herramientas:
 
-- **La app**, en Chrome: http://localhost:8011 (desde F5 tiene tablero, historial y perfil).
+- **La app**, en Chrome: http://localhost:8011 (desde F5 tiene tablero, historial y perfil; desde F6, gráficas, ajustes e invitaciones).
 - **El simulador**, en una terminal: hace de central y de nodos. Ahí disparas alarmas, apagas nodos o cortas la conexión, y ves llegar los comandos.
 - **La página `/api/v1/docs`** (para F1 a F4), en el navegador: pregunta y ordena a la API con botones.
 - **La consola del navegador** (opcional): muestra en vivo lo que envía el WebSocket.
@@ -168,8 +168,64 @@ Esto no lo pude comprobar: necesita tus celulares.
 - **Android por cable:** con el cable y el reenvío de puertos de F4, abrir http://localhost:8011 en Chrome del celular y repetir los pasos 5 a 9. En **Perfil** debe aparecer "Instalar la app" (o, en el menú de Chrome, "Instalar app"). Instalada, se abre desde su ícono sin la barra del navegador.
 - **iPhone:** necesita la app en el dominio con HTTPS (el servidor). En Safari: **Compartir → Agregar a inicio**, abrirla desde el ícono y en **Perfil → Activar en este dispositivo**. Sin instalar, el perfil muestra esos mismos pasos. Luego, una alarma del simulador del servidor (o de la central real) debe llegar como notificación.
 
+## F6 · Invitar, miembros, ajustes y gráficas
+
+En http://localhost:8011 con tu sesión de admin y el simulador encendido. La persona invitada ("Tomás") necesita **otro perfil de Chrome**: la foto de perfil arriba a la derecha → **Agregar** → **Continuar sin una cuenta**. No sirve una ventana de incógnito: ahí Chrome no deja recibir notificaciones.
+
+### Invitar a alguien
+
+| # | Qué haces | Qué debes ver |
+|---|---|---|
+| 1 | Tocar **Ajustes** (abajo en el celular, arriba en el computador) | "Ajustes de la casa" con dos pestañas, **Avisos** y **Miembros**. |
+| 2 | **Miembros** | En "Personas", tú con la marca "Tú". Tu rol y tu botón **Salir** están bloqueados, con la explicación "La casa necesita al menos un admin: haz admin a otra persona para cambiar este rol." |
+| 3 | En "Invitar a alguien", dejar **Cuidador**, escribir un email (por ejemplo `tomas@ejemplo.com`) y **Crear enlace** | El enlace (`http://localhost:8011/invitacion/…`) con **Copiar enlace** y **Compartir** (este, si el navegador sabe compartir; Chrome en Windows sí), y "Sirve una sola vez y vence el … a las …". Abajo, "Enlaces sin usar" lo muestra con el email. |
+| 4 | **Copiar enlace** | "Enlace copiado". |
+| 5 | En el perfil de Tomás, pegar el enlace | "Te invitaron a string" (el nombre de tu casa) y lo que podrá hacer. El email ya viene escrito. |
+| 6 | **Crear cuenta y entrar** sin llenar nada más | Junto a cada campo lo que falta ("Escribe tu nombre.", "La clave necesita al menos 10 caracteres.") y el cursor en el primero. |
+| 7 | Escribir el nombre "Tomás" y una clave de 10 caracteres o más, y **Crear cuenta y entrar** | "Ya eres parte de string · Activa las alertas en este celular desde Perfil." y el tablero de la casa, con el aviso "Este dispositivo no recibe alertas". En la navegación **no** aparece **Ajustes**. |
+| 8 | En el perfil de Tomás, escribir en la barra `localhost:8011/casa/1/miembros` | Vuelve al tablero: un cuidador no entra ahí. |
+| 9 | **Perfil → Activar en este dispositivo** (y permitir las notificaciones) | "Este dispositivo recibe las alertas". |
+| 10 | Simulador: `m 2` y luego `a 2` | La notificación "🚨 Baño" llega a los dos perfiles de Chrome: el tuyo y el de Tomás. |
+| 11 | Simulador: `s 2` | "🔕 Baño" en los dos. |
+| 12 | Abrir otra vez el mismo enlace | "Esta invitación no sirve" y "Esta invitación ya se usó. Pide una nueva a quien te invitó." |
+| 13 | En tu perfil, **Miembros** | Tomás aparece como Cuidador y ya no hay "Enlaces sin usar". |
+| 14 | **Historial → Eventos** | "Tomás se unió a la casa como cuidador". |
+
+### Cambiar un rol y quitar a alguien
+
+| # | Qué haces | Qué debes ver |
+|---|---|---|
+| 15 | En **Miembros**, cambiar el rol de Tomás a **Admin** | "Tomás ahora es admin". Tu rol y tu **Salir** se desbloquean: ya hay dos admins. |
+| 16 | Volver a poner a Tomás como **Cuidador** y tocar **Quitar** en su fila | Un diálogo "¿Quitar a Tomás de la casa?", que explica que dejará de ver la casa y de recibir sus alertas. **Cancelar** lo cierra sin hacer nada. |
+| 17 | **Quitar** otra vez y **Quitar de la casa** | "Tomás ya no es parte de la casa" y su fila desaparece. En **Historial → Eventos**, "Admin de desarrollo quitó a Tomás de la casa" (y los cambios de rol del paso 15 y 16). |
+| 18 | En el perfil de Tomás, recargar | Ya no ve la casa: "Tu cuenta todavía no tiene casas." Tampoco le llegan más alarmas. |
+| 19 | Crear otro enlace y tocar **Anular** en "Enlaces sin usar"; luego abrir ese enlace en el perfil de Tomás | "Enlace anulado: ya no sirve" y, arriba, vuelve el formulario de invitar: ya no ofrece copiar un enlace muerto. Al abrirlo: "Esta invitación no sirve" y "Puede que el enlace esté incompleto o que lo hayan anulado." |
+
+### Ajustes de la casa
+
+| # | Qué haces | Qué debes ver |
+|---|---|---|
+| 20 | **Ajustes → Avisos** | El nombre de la casa, los tres recordatorios en minutos (alarma, conexión y cuándo avisar que la central se desconectó), cada uno con una frase de qué cambia, y dos palancas: "Nodo sin conexión" y "Alarma resuelta". **Guardar cambios** está bloqueado: "Sin cambios por guardar." |
+| 21 | Cambiar "Repetir el aviso de una alarma cada" a 10, apagar "Alarma resuelta" y **Guardar cambios** | "Ajustes guardados". Al recargar siguen así. Déjalos luego como estaban. |
+| 22 | Escribir 0 en "Avisar que la central se desconectó después de" y tocar **Guardar cambios** | Debajo del campo, "Un número entre 1 y 1440." con un ícono de alerta. El botón no se bloquea (como en el resto de la app), pero no guarda: lleva el cursor a ese campo. Vuelve a poner 1. |
+| 23 | Cambiar el nombre de la casa y guardar | El nombre nuevo aparece arriba, en la barra. |
+
+### Gráficas
+
+| # | Qué haces | Qué debes ver |
+|---|---|---|
+| 24 | **Gráficas** | "Alarmas de los últimos 7 días": el total, el tiempo promedio para silenciar, cuántas de cada tipo y una barra por día (rojo, de los sensores; gris, de conexión). Debajo, temperatura, sensor de gas y agua de la cocina de las últimas 24 horas: cada una con su último valor ("Ahora" o "Último, HH:MM"), el máximo y el mínimo. Donde la central no mandó datos, la línea se corta. |
+| 25 | Pasar el mouse (o el dedo) por una gráfica | Una burbuja con el valor y la hora. |
+| 26 | **Ver los datos** | La misma serie en una tabla, de la más reciente a la más antigua. |
+| 27 | **7 días** | Las tres gráficas pasan a la semana, con los siete días en el eje. Con el foco en el selector, las flechas del teclado también cambian el periodo. |
+| 28 | Ventana a todo el ancho | Dos columnas: las alarmas a la izquierda, quietas al bajar, y las lecturas a la derecha. |
+
+### Al otro día (lo compruebas tú)
+
+- **Limpieza de madrugada:** si la API quedó encendida a las 3:00, `docker compose logs api | grep Mantenimiento` muestra una línea como `Mantenimiento: eventos 0, lecturas 0, sesiones 1, invitaciones 0`: cuántas filas viejas borró de cada tabla (eventos de más de 180 días, lecturas de más de 90, sesiones vencidas e invitaciones usadas o vencidas hace más de 30).
+- **En tu celular:** la invitación también se puede abrir allí, con el reenvío de puertos de F4. **Compartir** abre el menú del celular (WhatsApp, etc.).
+
 ## Lo que todavía no se puede probar
 
 - Telegram (y su sección del perfil): F4b.
-- Invitar a otra persona, los miembros, los ajustes de la casa y las gráficas: F6.
 - La central ESP32 real y el dominio público con su configuración de producción: F7.

@@ -329,6 +329,173 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/casas/{casa_id}/lecturas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lecturas
+         * @description Promedio por intervalo, del más viejo al más nuevo. Los intervalos sin lecturas (nodo
+         *     apagado, central caída) no aparecen: la gráfica muestra el hueco en vez de inventarlo.
+         */
+        get: operations["lecturas_api_v1_casas__casa_id__lecturas_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/casas/{casa_id}/resumen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Resumen
+         * @description Las alarmas de los últimos `dias` días (hoy incluido, con la hora de Bogotá).
+         */
+        get: operations["resumen_api_v1_casas__casa_id__resumen_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/casas/{casa_id}/miembros": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar
+         * @description Primero los admins; dentro de cada rol, por nombre.
+         */
+        get: operations["listar_api_v1_casas__casa_id__miembros_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/casas/{casa_id}/miembros/{usuario_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Quitar
+         * @description Deja de ver la casa y de recibir sus alertas. Su cuenta y sus otras casas siguen igual.
+         */
+        delete: operations["quitar_api_v1_casas__casa_id__miembros__usuario_id__delete"];
+        options?: never;
+        head?: never;
+        /** Cambiar Rol */
+        patch: operations["cambiar_rol_api_v1_casas__casa_id__miembros__usuario_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/casas/{casa_id}/invitaciones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Vigentes
+         * @description Las que todavía se pueden usar, de la más nueva a la más vieja.
+         */
+        get: operations["vigentes_api_v1_casas__casa_id__invitaciones_get"];
+        put?: never;
+        /**
+         * Crear
+         * @description Un enlace de un solo uso, vigente 72 horas, para compartir (por ejemplo, por WhatsApp).
+         */
+        post: operations["crear_api_v1_casas__casa_id__invitaciones_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/casas/{casa_id}/invitaciones/{invitacion_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Anular
+         * @description El enlace deja de servir al instante.
+         */
+        delete: operations["anular_api_v1_casas__casa_id__invitaciones__invitacion_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invitaciones/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ver
+         * @description A qué casa y con qué rol invita el enlace. Responde 410 si venció.
+         */
+        get: operations["ver_api_v1_invitaciones__token__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invitaciones/{token}/aceptar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Aceptar
+         * @description Sin sesión, crea la cuenta con `{nombre, email, clave}`, la une a la casa y entrega la
+         *     cookie. Con sesión, une a la casa a quien ya tiene cuenta (el cuerpo va vacío).
+         */
+        post: operations["aceptar_api_v1_invitaciones__token__aceptar_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/push/clave-publica": {
         parameters: {
             query?: never;
@@ -419,6 +586,18 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AceptarInvitacion
+         * @description Sin sesión: nombre, email y clave crean la cuenta. Con sesión: el cuerpo va vacío.
+         */
+        AceptarInvitacion: {
+            /** Nombre */
+            nombre?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Clave */
+            clave?: string | null;
+        };
         /** Ajustes */
         Ajustes: {
             /** Recordatorio Min */
@@ -464,6 +643,18 @@ export interface components {
             /** Avisos Enviados */
             avisos_enviados: number;
         };
+        /** AlarmasDelDia */
+        AlarmasDelDia: {
+            /**
+             * Dia
+             * Format: date
+             */
+            dia: string;
+            /** Sensor */
+            sensor: number;
+            /** Conexion */
+            conexion: number;
+        };
         /** BajaSuscripcion */
         BajaSuscripcion: {
             /** Endpoint */
@@ -496,6 +687,14 @@ export interface components {
             clave_actual: string;
             /** Clave Nueva */
             clave_nueva: string;
+        };
+        /** CambioMiembro */
+        CambioMiembro: {
+            /**
+             * Rol
+             * @enum {string}
+             */
+            rol: "admin" | "cuidador";
         };
         /** CambioPreferencias */
         CambioPreferencias: {
@@ -684,6 +883,66 @@ export interface components {
             /** A */
             a: boolean;
         };
+        /** InvitacionCreada */
+        InvitacionCreada: {
+            /** Id */
+            id: number;
+            /** Url */
+            url: string;
+            /**
+             * Expira En
+             * Format: date-time
+             */
+            expira_en: string;
+        };
+        /** InvitacionNueva */
+        InvitacionNueva: {
+            /**
+             * Rol
+             * @enum {string}
+             */
+            rol: "admin" | "cuidador";
+            /** Email */
+            email?: string | null;
+        };
+        /**
+         * InvitacionPublica
+         * @description Lo que ve quien abre el enlace, sin sesión.
+         */
+        InvitacionPublica: {
+            /** Casa Nombre */
+            casa_nombre: string;
+            /**
+             * Rol
+             * @enum {string}
+             */
+            rol: "admin" | "cuidador";
+            /** Email */
+            email: string | null;
+        };
+        /** InvitacionVigente */
+        InvitacionVigente: {
+            /** Id */
+            id: number;
+            /**
+             * Rol
+             * @enum {string}
+             */
+            rol: "admin" | "cuidador";
+            /** Email */
+            email: string | null;
+            /**
+             * Creada En
+             * Format: date-time
+             */
+            creada_en: string;
+            /**
+             * Expira En
+             * Format: date-time
+             */
+            expira_en: string;
+            creada_por: components["schemas"]["UsuarioBreve"] | null;
+        };
         /** Login */
         Login: {
             /**
@@ -693,6 +952,20 @@ export interface components {
             email: string;
             /** Clave */
             clave: string;
+        };
+        /** MiembroCasa */
+        MiembroCasa: {
+            usuario: components["schemas"]["PersonaMiembro"];
+            /**
+             * Rol
+             * @enum {string}
+             */
+            rol: "admin" | "cuidador";
+            /**
+             * Creado En
+             * Format: date-time
+             */
+            creado_en: string;
         };
         /**
          * NodoCentral
@@ -753,6 +1026,15 @@ export interface components {
             /** Siguiente */
             siguiente: number | null;
         };
+        /** PersonaMiembro */
+        PersonaMiembro: {
+            /** Id */
+            id: number;
+            /** Nombre */
+            nombre: string;
+            /** Email */
+            email: string;
+        };
         /** Preferencias */
         Preferencias: {
             webpush: components["schemas"]["PreferenciasWebPush"];
@@ -788,12 +1070,35 @@ export interface components {
              */
             canal: "webpush" | "telegram" | "todos";
         };
+        /** Punto */
+        Punto: {
+            /**
+             * T
+             * Format: date-time
+             */
+            t: string;
+            /** Valor */
+            valor: number;
+        };
         /** ResultadoPrueba */
         ResultadoPrueba: {
             /** Webpush */
             webpush: number;
             /** Telegram */
             telegram: boolean;
+        };
+        /** Resumen */
+        Resumen: {
+            /** Dias */
+            dias: number;
+            /** Alarmas Por Tipo */
+            alarmas_por_tipo: {
+                [key: string]: number;
+            };
+            /** Tiempo Medio Respuesta S */
+            tiempo_medio_respuesta_s: number | null;
+            /** Alarmas Por Dia */
+            alarmas_por_dia: components["schemas"]["AlarmasDelDia"][];
         };
         /** ResumenCasa */
         ResumenCasa: {
@@ -1992,6 +2297,634 @@ export interface operations {
             };
             /** @description No encontrado */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    lecturas_api_v1_casas__casa_id__lecturas_get: {
+        parameters: {
+            query: {
+                nodo: number;
+                metrica: "temperatura" | "gas" | "caudal";
+                /** @description medido_en ≥ desde */
+                desde: string;
+                /** @description medido_en < hasta */
+                hasta: string;
+                agregacion?: "1m" | "5m" | "1h";
+            };
+            header?: never;
+            path: {
+                casa_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Punto"][];
+                };
+            };
+            /** @description Solicitud inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Sin permiso u origen inválido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    resumen_api_v1_casas__casa_id__resumen_get: {
+        parameters: {
+            query?: {
+                dias?: number;
+            };
+            header?: never;
+            path: {
+                casa_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Resumen"];
+                };
+            };
+            /** @description Solicitud inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Sin permiso u origen inválido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listar_api_v1_casas__casa_id__miembros_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                casa_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MiembroCasa"][];
+                };
+            };
+            /** @description Solicitud inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Sin permiso u origen inválido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    quitar_api_v1_casas__casa_id__miembros__usuario_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                usuario_id: number;
+                casa_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Solicitud inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Sin permiso u origen inválido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conflicto */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    cambiar_rol_api_v1_casas__casa_id__miembros__usuario_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                usuario_id: number;
+                casa_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CambioMiembro"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MiembroCasa"];
+                };
+            };
+            /** @description Solicitud inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Sin permiso u origen inválido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conflicto */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    vigentes_api_v1_casas__casa_id__invitaciones_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                casa_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitacionVigente"][];
+                };
+            };
+            /** @description Solicitud inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Sin permiso u origen inválido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    crear_api_v1_casas__casa_id__invitaciones_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                casa_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvitacionNueva"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitacionCreada"];
+                };
+            };
+            /** @description Solicitud inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Sin permiso u origen inválido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    anular_api_v1_casas__casa_id__invitaciones__invitacion_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invitacion_id: number;
+                casa_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Solicitud inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Sin permiso u origen inválido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    ver_api_v1_invitaciones__token__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitacionPublica"];
+                };
+            };
+            /** @description Solicitud inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conflicto */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Demasiados intentos */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    aceptar_api_v1_invitaciones__token__aceptar_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AceptarInvitacion"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Usuario"];
+                };
+            };
+            /** @description Solicitud inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Sin permiso u origen inválido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description No encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Conflicto */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Demasiados intentos */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
