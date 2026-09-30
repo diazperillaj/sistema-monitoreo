@@ -158,7 +158,7 @@ Todo en Chrome, en http://localhost:8011, con el simulador encendido. Para verla
 | # | Qué haces | Qué debes ver |
 |---|---|---|
 | 20 | Ventana del computador a todo el ancho | El tablero en dos columnas: a la izquierda el momento, las alarmas y "Lo último en la central"; a la derecha los instrumentos. Las secciones pasan a la barra de arriba. |
-| 21 | Windows en modo oscuro (Configuración → Personalización → Colores) | La app pasa a grafito, sin nada blanco que encandile de noche; el rojo de alarma se oscurece. |
+| 21 | Tocar la **luna** de la barra de arriba (junto al parlante); luego el **sol** | Pasa a grafito, sin nada blanco que encandile de noche (el rojo de alarma se oscurece); el sol vuelve al esmalte. Al recargar se queda como lo dejaste, sin destello. En **Perfil → Apariencia**, "Automático" vuelve a seguir el modo de Windows (Configuración → Personalización → Colores). |
 | 22 | (Opcional) Con la app abierta, cambiar un texto en `frontend/src`, volver a levantar con `up -d --build api` y recargar la página una vez | "Nueva versión disponible" con el botón **Actualizar**; al tocarlo, la página carga la versión nueva. |
 
 ### En el celular (lo pruebas tú)

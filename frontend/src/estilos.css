@@ -10,8 +10,12 @@
 @import "@fontsource/barlow-semi-condensed/500.css";
 @import "@fontsource/barlow-semi-condensed/600.css";
 
+/*
+ * El tema lo decide data-tema en <html> ("claro" u "oscuro"): lo pone public/tema.js antes de
+ * pintar, según la elección de este dispositivo o, en "Automático", el modo del sistema.
+ */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 
   /* Día: esmalte */
   --suelo: #e4e9e8; /* el panel de acero donde van montados los instrumentos */
@@ -36,30 +40,37 @@
   --sombra: 20 30 32;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Noche: grafito. Sin negro puro ni brillo: se mira recién despierto */
-    --suelo: #0c0f10;
-    --cara: #151a1c;
-    --cara-2: #1b2124;
-    --filo: #2b3337;
-    --marca: #56636a;
-    --tinta: #e7ecea;
-    --tinta-2: #a9b4b8;
-    --tinta-3: #85929a;
-    --alarma: #ff5b4f;
-    --alarma-campo: #7f1d17;
-    --sobre-alarma: #ffe9e6;
-    --sobre-alarma-2: #ffc9c2;
-    --ambar: #f0b13a;
-    --ambar-tinta: #f2c261;
-    --ambar-fondo: #3a2c0f;
-    --verdin: #4cc1a2;
-    --verdin-fondo: #12302a;
-    --aviso: #2b3337; /* de noche, grafito elevado: nada de franja blanca al despertar */
-    --sobre-aviso: #e7ecea;
-    --sombra: 0 0 0;
-  }
+:root[data-tema="oscuro"] {
+  color-scheme: dark;
+
+  /* Noche: grafito. Sin negro puro ni brillo: se mira recién despierto */
+  --suelo: #0c0f10;
+  --cara: #151a1c;
+  --cara-2: #1b2124;
+  --filo: #2b3337;
+  --marca: #56636a;
+  --tinta: #e7ecea;
+  --tinta-2: #a9b4b8;
+  --tinta-3: #85929a;
+  --alarma: #ff5b4f;
+  --alarma-campo: #7f1d17;
+  --sobre-alarma: #ffe9e6;
+  --sobre-alarma-2: #ffc9c2;
+  --ambar: #f0b13a;
+  --ambar-tinta: #f2c261;
+  --ambar-fondo: #3a2c0f;
+  --verdin: #4cc1a2;
+  --verdin-fondo: #12302a;
+  --aviso: #2b3337; /* de noche, grafito elevado: nada de franja blanca al despertar */
+  --sobre-aviso: #e7ecea;
+  --sombra: 0 0 0;
+}
+
+/* Al cambiar de tema, todo cambia a la vez: sin transiciones, nada queda a medio camino */
+.cambiando-tema *,
+.cambiando-tema *::before,
+.cambiando-tema *::after {
+  transition: none !important;
 }
 
 @theme inline {

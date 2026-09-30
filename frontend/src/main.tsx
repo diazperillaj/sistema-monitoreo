@@ -7,6 +7,7 @@ import { cuandoSePierdaLaSesion, ErrorApi } from "./api/cliente";
 import { claves } from "./api/consultas";
 import { AvisoNuevaVersion } from "./componentes/AvisoNuevaVersion";
 import "./estilos.css";
+import "./lib/tema"; // retoma el tema de public/tema.js y sigue los cambios del sistema
 import "./notificaciones/instalacion"; // escucha beforeinstallprompt desde el arranque
 import { crearRouter } from "./rutas";
 

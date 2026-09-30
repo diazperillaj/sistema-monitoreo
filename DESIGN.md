@@ -164,7 +164,7 @@ El color es señal, no decoración. Rojo, ámbar y verdín tienen cada uno un ú
 Rechazo confirmado: la cuadrícula de tarjetas con ícono e interruptor de las apps de casa inteligente.
 
 **Key Characteristics:**
-- Día esmalte / noche grafito, conmutados solo por `prefers-color-scheme` (también el `theme-color` del navegador: `cara` de cada esquema).
+- Día esmalte / noche grafito, conmutados por `data-tema` en `<html>`: «Automático» sigue `prefers-color-scheme`; el botón de la barra superior y Perfil → Apariencia lo fijan por dispositivo. `public/tema.js` lo aplica antes de pintar, junto con el `theme-color` (`cara` de cada esquema). El cambio es instantáneo: sin transiciones durante un cuadro, para que nada quede a medio camino.
 - Escalas calibradas de 20 tramos con escalones al 25, 50 y 75 % que se encienden al cruzarlos.
 - Cifras de odómetro en Barlow Semi Condensed tabular; texto en Barlow.
 - Un campo rojo a todo el ancho es la única superficie roja.
@@ -173,7 +173,7 @@ Rechazo confirmado: la cuadrícula de tarjetas con ícono e interruptor de las a
 
 ## Colors
 
-Neutros de acero y esmalte con tres señales de un solo uso cada una. Los valores del frontmatter son los de día; la noche redefine los mismos tokens en `@media (prefers-color-scheme: dark)` (valores en el sidecar) y los componentes solo usan los nombres.
+Neutros de acero y esmalte con tres señales de un solo uso cada una. Los valores del frontmatter son los de día; la noche redefine los mismos tokens en `:root[data-tema="oscuro"]` (valores en el sidecar) y los componentes solo usan los nombres.
 
 ### Primary
 - **Tinta de grafito** (`tinta`): texto principal, botón primario, aguja de la escala, escalones cruzados, marca de pestaña activa, anillo de foco. El recorrido de la escala es esta misma tinta al 25 %. De noche es blanco hueso.

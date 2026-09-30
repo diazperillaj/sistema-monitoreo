@@ -107,4 +107,17 @@ describe("Perfil", () => {
     expect(screen.getByText("Le faltan caracteres: mínimo 10.")).toBeInTheDocument();
     expect(screen.getByText("No coincide con la clave nueva.")).toBeInTheDocument();
   });
+
+  it("la apariencia empieza en Automático y se puede fijar en Oscuro", async () => {
+    montar();
+    const grupo = await screen.findByRole("radiogroup", { name: "Apariencia" });
+    expect(within(grupo).getByRole("radio", { name: "Automático" })).toBeChecked();
+
+    fireEvent.click(within(grupo).getByRole("radio", { name: "Oscuro" }));
+    expect(document.documentElement.dataset.tema).toBe("oscuro");
+    expect(within(grupo).getByRole("radio", { name: "Oscuro" })).toBeChecked();
+
+    fireEvent.click(within(grupo).getByRole("radio", { name: "Automático" }));
+    expect(localStorage.getItem("alarma-hogar:tema")).toBeNull();
+  });
 });

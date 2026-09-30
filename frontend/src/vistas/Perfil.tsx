@@ -26,6 +26,8 @@ import { Campo } from "../componentes/ui/Campo";
 import { Palanca } from "../componentes/ui/Palanca";
 import { cuando } from "../dominio/tiempo";
 import { describirDispositivo } from "../lib/dispositivo";
+import { fijarTema, useTema, type PreferenciaTema } from "../lib/tema";
+import { cn } from "../lib/utils";
 import { useInstalacion } from "../notificaciones/instalacion";
 import {
   activarPush,
@@ -389,6 +391,10 @@ export default function Perfil() {
 
       {!ios && <InstalarSiHace />}
 
+      <Seccion titulo="Apariencia">
+        <Apariencia />
+      </Seccion>
+
       <Seccion titulo="Seguridad">
         <CambiarClave />
         <Sesiones />
@@ -407,6 +413,56 @@ export default function Perfil() {
         Salir de esta cuenta
       </Boton>
     </>
+  );
+}
+
+const OPCIONES_TEMA: [PreferenciaTema, string][] = [
+  ["sistema", "Automático"],
+  ["claro", "Claro"],
+  ["oscuro", "Oscuro"],
+];
+
+/** Claro, oscuro o como el dispositivo. Se guarda en este dispositivo, no en la cuenta. */
+function Apariencia() {
+  const { preferencia } = useTema();
+  return (
+    <div className="space-y-3 px-4 py-4">
+      <h2 id="titulo-apariencia" className="font-semibold">
+        Apariencia
+      </h2>
+      <div
+        role="radiogroup"
+        aria-labelledby="titulo-apariencia"
+        className="grid grid-cols-3 gap-1 rounded-[8px] bg-cara-2 p-1 ring-1 ring-filo ring-inset"
+      >
+        {OPCIONES_TEMA.map(([valor, texto]) => (
+          <label
+            key={valor}
+            className={cn(
+              "pulsable flex h-11 cursor-pointer items-center justify-center rounded-[6px] text-sm font-semibold text-tinta-2",
+              "has-[:checked]:bg-cara has-[:checked]:text-tinta",
+              "has-[:checked]:shadow-[0_0_0_1px_var(--filo),0_1px_2px_rgb(var(--sombra)/0.12)]",
+              "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-tinta",
+            )}
+          >
+            <input
+              type="radio"
+              name="tema"
+              value={valor}
+              checked={preferencia === valor}
+              onChange={() => fijarTema(valor)}
+              className="sr-only"
+            />
+            {texto}
+          </label>
+        ))}
+      </div>
+      <p className="text-sm text-tinta-2">
+        {preferencia === "sistema"
+          ? "Sigue el modo claro u oscuro de este dispositivo."
+          : "Se queda así en este dispositivo, aunque el sistema cambie."}
+      </p>
+    </div>
   );
 }
 

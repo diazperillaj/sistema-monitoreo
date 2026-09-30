@@ -1,6 +1,6 @@
 # Sistema de monitoreo doméstico — Arquitectura del backend
 
-> **Versión:** 1.15 · **Fecha:** 30/09/2026 · **Autor:** Juan Pablo (con Claude)
+> **Versión:** 1.16 · **Fecha:** 30/09/2026 · **Autor:** Juan Pablo (con Claude)
 > **Objetivo del documento:** especificación completa para desarrollar el backend y la app web con Claude Code.
 > **Alcance:** backend, infraestructura y frontend. **El firmware de las ESP32 ya existe y NO se modifica**; solo se le cambian valores de configuración (§12.9).
 >
@@ -28,6 +28,8 @@
 > **Cambios en 1.14 (F4):** Web Push completo: quién marca `ultimo_aviso_en` y cuenta `avisos_enviados`, cuándo se avisa "Central en línea", urgencia de cada aviso (§10.1); "Silenciar" solo en alarmas de sensor (§10.3); errores de envío (§10.4); claves VAPID validadas al arrancar y solo suscripciones de servicios de push conocidos (§12.7); respuestas de `/push` y `/notificaciones` (§8.7).
 >
 > **Cambios en 1.15 (F5):** mundo visual "Instrumentos de la casa" (S15, `DESIGN.md`); componentes con Radix directo y estilos propios, sin la CLI de shadcn, y fuentes Barlow servidas desde el sitio (§3.3); estructura de `frontend/` y nombres de componentes (§11.1, §11.4); el movimiento se muestra solo cuando lo hay y la lectura cruda del gas no se muestra (§11.4); la edad del dato deja de crecer a los 20 s y el sondeo de respaldo no reintenta (§11.3); manifest en grafito e íconos generados por `tools/generar_iconos.py` (§11.5); sonido y vibración con un toque (§11.6); WebSocket de mentira en las pruebas (§13.5).
+>
+> **Cambios en 1.16 (revisión de F5):** modo claro u oscuro elegible por dispositivo, con un botón en la barra superior y "Apariencia" en el perfil, aplicado antes de pintar por `public/tema.js` (§11.6); el peso del JS inicial se mide con `npm run peso`, que suma el archivo principal y los que precarga (§11.6, §11.7, §13.5).
 
 ---
 
@@ -253,7 +255,7 @@ Versiones **verificadas el 28/09/2026**, compilando un esqueleto con este stack.
 | Rutas | React Router (`createBrowserRouter`, paquete `react-router`) | 8.4 | URLs limpias; FastAPI devuelve `index.html` en las rutas del cliente (§6.7). **Exige Node ≥ 22.22** |
 | Datos del servidor | TanStack Query | 5.104 | Caché, reintentos y mutaciones. El WebSocket escribe en su caché (§11.3) |
 | Cliente HTTP tipado | `openapi-fetch` + `openapi-typescript` | 0.17 / 7.13 | Tipos generados del OpenAPI de FastAPI (§11.7) |
-| Estilos | Tailwind CSS + `@tailwindcss/vite` | 4.3 | Modo oscuro con `prefers-color-scheme` |
+| Estilos | Tailwind CSS + `@tailwindcss/vite` | 4.3 | Modo claro u oscuro con `data-tema` en `<html>` (§11.6) |
 | Componentes | Radix (`@radix-ui/react-switch`, `react-tabs`, `react-dialog`) con estilos propios, `lucide-react` (íconos), `sonner` (avisos) | Radix 1 · lucide 1.49 · sonner 2 | Sin la CLI de shadcn: Radix aporta el teclado y la accesibilidad, y cada pieza lleva el estilo del mundo visual (`DESIGN.md`) |
 | Fuentes | Barlow y Barlow Semi Condensed (`@fontsource`) | 5.3 | Servidas desde el propio sitio: la CSP no permite fuentes de terceros. Cifras tabulares para contadores y horas |
 | Gráficas | Recharts | 3.10 | Solo en la vista de gráficas, con carga diferida |
@@ -1873,9 +1875,9 @@ La lógica pura (bits, textos, formato de tiempos) vive en `src/dominio/` y se *
   - contraste AA y tamaños táctiles ≥ 44 px;
   - interruptores y diálogos de Radix, con teclado y lector de pantalla;
   - las alarmas se anuncian con `aria-live="assertive"`.
-- **Modo oscuro:** automático con `prefers-color-scheme`: los tokens de `estilos.css` cambian de valor (esmalte de día, grafito de noche; `DESIGN.md`).
+- **Modo claro u oscuro:** "Automático" (el de siempre) sigue el modo del dispositivo; el botón de la luna o el sol en la barra superior, o **Perfil → Apariencia** (Automático, Claro, Oscuro), lo fijan en ese dispositivo (`localStorage`, clave `alarma-hogar:tema`). `public/tema.js` pone `data-tema` en `<html>` y el color de la barra del celular (`theme-color`) antes de pintar: sin destello blanco de noche. Va en un archivo aparte porque la CSP no permite scripts en línea. Los tokens de `estilos.css` cambian con `data-tema` (esmalte de día, grafito de noche; `DESIGN.md`).
 - **Idioma y hora:** textos en español. Fechas con `Intl.DateTimeFormat("es-CO", {timeZone: "America/Bogota"})`.
-- **Peso:** el tablero (carga inicial) debe quedar en **≤ 150 KB gzip** de JS (en F5: 126 KB). Recharts y las vistas diferidas van en chunks aparte.
+- **Peso:** el tablero (carga inicial) debe quedar en **≤ 150 KB gzip** de JS. Recharts y las vistas diferidas van en chunks aparte. Se mide con `npm run peso` después del build: suma el archivo principal y los que `index.html` precarga (la salida de Vite los lista por separado). Tras F5: unos 144 kB.
 
 ### 11.7 Desarrollo, tipos y build
 
@@ -1889,6 +1891,7 @@ La lógica pura (bits, textos, formato de tiempos) vive en `src/dominio/` y se *
 | `test` | `vitest run` | Pruebas (§13.5) |
 | `lint` | `eslint . && prettier --check .` | Calidad |
 | `tipos` | `openapi-typescript openapi.json -o src/api/tipos.gen.ts` | Regenerar tipos desde el contrato de la API |
+| `peso` | `node scripts/peso-inicial.mjs` | Peso del JS inicial (principal más precargas); falla si pasa de 150 kB. Después de `build` |
 
 **Proxy de desarrollo (`vite.config.ts`).** La app y la API quedan en el **mismo origen** (`localhost:5173`), así que la cookie de sesión funciona igual que en producción.
 
@@ -2097,7 +2100,7 @@ Con **Vitest + Testing Library**, la API simulada con **MSW** usando los tipos g
 - **`useCasaEnVivo`:** un mensaje `estado` actualiza la caché. Si se cae el WS, pasa a polling y vuelve al reconectar.
 - **Rutas y guardas:** sin sesión → `/login?volver=…`; un cuidador que entra a `/casa/1/miembros` es redirigido.
 - **Perfil:** la sección de Telegram se oculta con `disponible: false`, y el flujo de vincular consulta preferencias hasta `vinculado: true`.
-- **Build:** `npm run build` sin errores de tipos. El chunk inicial queda en ≤ 150 KB gzip (se revisa en la salida de Vite).
+- **Build:** `npm run build` sin errores de tipos. El JS inicial queda en ≤ 150 KB gzip: `npm run peso` lo suma y falla si se pasa.
 - **Humo extremo a extremo (opcional, F5):** Playwright contra el compose de desarrollo con el simulador. Iniciar sesión → ver el tablero → disparar una alarma → silenciarla.
 
 ---

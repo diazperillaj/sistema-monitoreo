@@ -20,6 +20,7 @@ import {
 } from "../tiempo-real/casaActual";
 import { useAlertaSonora, type AlertaSonora } from "../tiempo-real/useAlertaSonora";
 import { useCasaEnVivo } from "../tiempo-real/useCasaEnVivo";
+import { BotonTema } from "./BotonTema";
 import { Lampara, type Luz } from "./Lampara";
 
 const LUZ_CONEXION: Record<Situacion["tipo"], Luz> = {
@@ -225,7 +226,10 @@ export function Layout() {
                 {textoCorto(envivo.situacion)}
               </p>
             )}
-            <BotonSonido sonido={sonido} />
+            <div className="flex shrink-0 items-center">
+              <BotonTema />
+              <BotonSonido sonido={sonido} />
+            </div>
           </div>
         </header>
 
