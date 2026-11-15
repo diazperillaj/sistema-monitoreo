@@ -1,0 +1,9 @@
+# Cada central SOLO puede tocar sus propios tópicos (usuario MQTT == ID_CASA)
+pattern write casa/%u/estado
+pattern write casa/%u/online
+pattern read casa/%u/cmd
+
+# El backend ve todas las casas. Su usuario lleva "_", que ID_CASA no admite:
+# así ninguna central puede llamarse igual (§12.6)
+user backend_api
+topic readwrite casa/#

@@ -1,0 +1,15 @@
+# Contexto de build = raíz del repo (§5.2). La imagen solo necesita frontend/ y backend/.
+.git
+.env
+backups/
+mosquitto/
+firmware/
+docs/
+tools/
+**/node_modules
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+frontend/dist
+backend/tests

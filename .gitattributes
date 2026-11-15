@@ -1,0 +1,8 @@
+# Todo el texto con finales de línea LF: los scripts y la configuración de Mosquitto
+# se ejecutan dentro de contenedores Linux, y el core.autocrlf de Windows los rompería.
+* text=auto eol=lf
+
+*.png  binary
+*.jpg  binary
+*.ico  binary
+*.webp binary

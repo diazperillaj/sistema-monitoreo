@@ -1,0 +1,9 @@
+# Bloque para agregar al Caddyfile del Caddy que YA existe en el servidor (§5.3).
+# Después: docker exec <contenedor-caddy> caddy reload --config /etc/caddy/Caddyfile
+#
+# Si Caddy corre en el host (o con network_mode: host), usar en su lugar:
+#   reverse_proxy 127.0.0.1:8011
+sistemamonitoreo.duckdns.org {
+	encode zstd gzip
+	reverse_proxy alarma-api:8011
+}

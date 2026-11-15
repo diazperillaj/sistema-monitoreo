@@ -1,0 +1,23 @@
+# Secretos y datos locales
+.env
+backups/
+mosquitto/config/passwd
+mosquitto/certs/
+docker-compose.dev.yml.local
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Sistema / editores
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,70 @@
+# Alarma hogar: solo la app (§5.2). Caddy y el actualizador de DuckDNS ya existen en el servidor.
+name: alarma
+
+services:
+  api:
+    build:
+      context: .                         # raíz del repo: el Dockerfile necesita frontend/ y backend/
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    ports: ["127.0.0.1:8011:8011"]     # solo loopback del servidor: Caddy en el host o pruebas con curl
+    networks:
+      proxy:
+        aliases: [alarma-api]            # nombre único con el que el Caddy existente llega a la API
+      interna: {}
+    depends_on:
+      db:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8011/api/v1/salud')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - TZ=UTC
+      - PGTZ=UTC
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks: [interna]                  # SIN puertos publicados
+    shm_size: 128mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    restart: unless-stopped
+    ports: ["8883:8883"]                 # SOLO el puerto TLS se publica
+    volumes:
+      # Solo lectura: los usuarios los escribe scripts/usuario_mqtt.sh desde un contenedor aparte (§5.4)
+      - ./mosquitto/config:/mosquitto/config:ro
+      - ./mosquitto/certs:/mosquitto/certs:ro
+      - mosquitto_data:/mosquitto/data
+    networks: [interna]
+
+networks:
+  proxy:
+    external: true
+    name: ${RED_PROXY}                   # red de Docker del Caddy existente (§15.4 paso 0)
+  interna: {}
+  # "interna" no usa "internal: true" porque Mosquitto publica el 8883 y la API necesita
+  # salida a internet (Web Push). El aislamiento lo da que Caddy NO está en "interna".
+
+volumes:
+  pg_data:
+  mosquitto_data:

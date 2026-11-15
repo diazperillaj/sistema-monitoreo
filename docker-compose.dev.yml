@@ -1,0 +1,7 @@
+# Solo desarrollo local (§5.2): publica PostgreSQL y el MQTT sin TLS en localhost.
+# Uso: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+services:                              # la API ya queda en 127.0.0.1:8011 por el compose base
+  db:
+    ports: ["127.0.0.1:${PUERTO_DB_DEV:-5432}:5432"]   # si el 5432 está ocupado: PUERTO_DB_DEV en el .env
+  mosquitto:
+    ports: ["127.0.0.1:1883:1883"]
